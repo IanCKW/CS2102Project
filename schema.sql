@@ -1,5 +1,5 @@
 DROP TABLE IF EXISTS Employees, Contacts, Juniors, Seniors, Bookers, Managers, Sessions, 
-Departments, Meeting_Rooms, Updates, Approves, Joins, Health_Declarations CASCADE;
+Departments, Meeting_Rooms, Updates, Approves, Joins, Health_Declarations, Check_Fever CASCADE;
 
 CREATE TABLE Departments (
     did INTEGER PRIMARY KEY,
@@ -16,6 +16,7 @@ CREATE TABLE Employees (
     home_contact INTEGER,
     office_contact INTEGER,
     FOREIGN KEY (did) REFERENCES Departments(did) ON UPDATE CASCADE
+    -- ON DELETE NO ACTION since departments with employees cannot be deleted
 );
 
 CREATE TABLE Juniors (
@@ -47,6 +48,8 @@ CREATE TABLE Meeting_Rooms (
     did     INTEGER NOT NULL,
     PRIMARY KEY (room, floor),
     FOREIGN KEY (did) REFERENCES Departments (did) ON UPDATE CASCADE
+    -- ON DELETE NO ACTION since departments with meeting rooms cannot be deleted
+
 );
 
 CREATE TABLE Updates(
@@ -81,7 +84,7 @@ CREATE TABLE Approves (
     FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor) 
     ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Managers (eid)
-    ON UPDATE CASCADE,
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE Joins (
@@ -97,17 +100,17 @@ CREATE TABLE Joins (
     ON UPDATE CASCADE
 );
 
+-- this table is to ensure 3NF normalization
+CREATE TABLE Check_Fever (
+    temp INTEGER PRIMARY KEY,
+    fever INTEGER DEFAULT 0 -- 1 is fever
+);
+
 CREATE TABLE Health_Declarations (
     date    INTEGER,
     temp    INTEGER CHECK (temp > 34 and temp < 43),
     eid     INTEGER,
     PRIMARY KEY (date, eid),
     FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
-    FOREIGN KEY (temp) REFERENCES CHECK_FEVER(temp)
-);
-
--- this table is to ensure 3NF normalization
-CREATE TABLE CHECK_FEVER(
-    temp INTEGER PRIMARY KEY,
-    fever INTEGER DEFAULT 0, -- 1 is fever
+    FOREIGN KEY (temp) REFERENCES check_fever(temp)
 );

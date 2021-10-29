@@ -12,36 +12,32 @@ CREATE TABLE Employees (
     email TEXT UNIQUE,
     resigned_date INTEGER,
     did INTEGER NOT NULL,
-    FOREIGN KEY (did) REFERENCES Departments(did)
-);
-
-CREATE TABLE Contacts (
-    eid INTEGER,
-    number INTEGER,
-    PRIMARY KEY (eid, number),
-    FOREIGN KEY (eid) REFERENCES Employees(eid)
+    contact INTEGER,
+    home_contact INTEGER,
+    office_contact INTEGER,
+    FOREIGN KEY (did) REFERENCES Departments(did) ON UPDATE CASCADE
 );
 
 CREATE TABLE Juniors (
     eid INTEGER PRIMARY KEY,
-    FOREIGN KEY (eid) REFERENCES Employees(eid)
+    FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE
 );
 
 CREATE TABLE Bookers (
     eid INTEGER PRIMARY KEY,
-    FOREIGN KEY (eid) REFERENCES Employees(eid)
+    FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE
 );
 
 CREATE TABLE Seniors (
     eid INTEGER PRIMARY KEY,
-    FOREIGN KEY (eid) REFERENCES Employees(eid),
-    FOREIGN KEY (eid) REFERENCES Bookers(eid)
+    FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
+    FOREIGN KEY (eid) REFERENCES Bookers(eid) 
 );
 
 CREATE TABLE Managers (
     eid INTEGER PRIMARY KEY,
-    FOREIGN KEY (eid) REFERENCES Employees(eid),
-    FOREIGN KEY (eid) REFERENCES Bookers(eid)
+    FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
+    FOREIGN KEY (eid) REFERENCES Bookers(eid) 
 );
 
 CREATE TABLE Meeting_Rooms (
@@ -50,7 +46,7 @@ CREATE TABLE Meeting_Rooms (
     rname   TEXT,
     did     INTEGER NOT NULL,
     PRIMARY KEY (room, floor),
-    FOREIGN KEY (did) REFERENCES Departments (did)
+    FOREIGN KEY (did) REFERENCES Departments (did) ON UPDATE CASCADE
 );
 
 CREATE TABLE Updates(
@@ -59,6 +55,7 @@ CREATE TABLE Updates(
     room    INTEGER,
     floor   INTEGER,
     FOREIGN KEY (room, floor) REFERENCES Meeting_rooms (room, floor) 
+    ON DELETE CASCADE -- ON UPDATES NO ACTION
 );
 
 CREATE TABLE Sessions (
@@ -66,10 +63,12 @@ CREATE TABLE Sessions (
     date    INTEGER,
     room    INTEGER,
     floor   INTEGER,
-    eid     INTEGER not null,
+    eid     INTEGER NOT NULL,
     PRIMARY KEY (time, date, room, floor),
-    FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor),
+    FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
+    ON DELETE CASCADE, -- ON UPDATES NO ACTION
     FOREIGN KEY (eid) REFERENCES Bookers (eid)
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE Approves (
@@ -79,8 +78,10 @@ CREATE TABLE Approves (
     floor   INTEGER,
     eid     INTEGER,
     PRIMARY KEY (time, date, room, floor),
-    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor),
+    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor) 
+    ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Managers (eid)
+    ON UPDATE CASCADE,
 );
 
 CREATE TABLE Joins (
@@ -90,15 +91,23 @@ CREATE TABLE Joins (
     floor   INTEGER,
     eid     INTEGER,
     PRIMARY KEY (time, date, room, floor, eid),
-    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions(time, date, room, floor),
+    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions(time, date, room, floor)
+    ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Employees (eid)
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE Health_Declarations (
     date    INTEGER,
     temp    INTEGER CHECK (temp > 34 and temp < 43),
-    fever   INTEGER DEFAULT 0,
     eid     INTEGER,
     PRIMARY KEY (date, eid),
-    FOREIGN KEY (eid) REFERENCES Employees(eid)
+    FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
+    FOREIGN KEY (temp) REFERENCES CHECK_FEVER(temp)
+);
+
+-- this table is to ensure 3NF normalization
+CREATE TABLE CHECK_FEVER(
+    temp INTEGER PRIMARY KEY,
+    fever INTEGER DEFAULT 0, -- 1 is fever
 );

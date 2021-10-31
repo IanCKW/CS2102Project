@@ -10,7 +10,7 @@ CREATE TABLE Employees (
     eid INTEGER PRIMARY KEY,
     ename TEXT,
     email TEXT UNIQUE,
-    resigned_date INTEGER,
+    resigned_date DATE,
     did INTEGER NOT NULL,
     contact INTEGER,
     home_contact INTEGER,
@@ -53,7 +53,7 @@ CREATE TABLE Meeting_Rooms (
 );
 
 CREATE TABLE Updates(
-    date    INTEGER primary key,
+    date    DATE primary key,
     new_cap INTEGER,
     room    INTEGER,
     floor   INTEGER,
@@ -63,7 +63,7 @@ CREATE TABLE Updates(
 
 CREATE TABLE Sessions (
     time    INTEGER,
-    date    INTEGER,
+    date    DATE,
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE Sessions (
 
 CREATE TABLE Approves (
     time    INTEGER,
-    date    INTEGER,
+    date    DATE,
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER,
@@ -89,7 +89,7 @@ CREATE TABLE Approves (
 
 CREATE TABLE Joins (
     time    INTEGER,
-    date    INTEGER,
+    date    DATE,
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER,
@@ -107,7 +107,7 @@ CREATE TABLE Check_Fever (
 );
 
 CREATE TABLE Health_Declarations (
-    date    INTEGER,
+    date    DATE,
     temp    INTEGER CHECK (temp > 34 and temp < 43),
     eid     INTEGER,
     PRIMARY KEY (date, eid),

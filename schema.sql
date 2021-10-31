@@ -49,7 +49,6 @@ CREATE TABLE Meeting_Rooms (
     PRIMARY KEY (room, floor),
     FOREIGN KEY (did) REFERENCES Departments (did) ON UPDATE CASCADE
     -- ON DELETE NO ACTION since departments with meeting rooms cannot be deleted
-
 );
 
 CREATE TABLE Updates(
@@ -71,7 +70,8 @@ CREATE TABLE Sessions (
     FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
     FOREIGN KEY (eid) REFERENCES Bookers (eid)
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+    CHECK (time >= 0 AND time < 24)
 );
 
 CREATE TABLE Approves (
@@ -84,7 +84,8 @@ CREATE TABLE Approves (
     FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor) 
     ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Managers (eid)
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+    CHECK (time >= 0 AND time < 24)
 );
 
 CREATE TABLE Joins (
@@ -97,20 +98,23 @@ CREATE TABLE Joins (
     FOREIGN KEY (time, date, room, floor) REFERENCES Sessions(time, date, room, floor)
     ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Employees (eid)
-    ON UPDATE CASCADE
+    ON UPDATE CASCADE,
+    CHECK (time >= 0 AND time < 24)
 );
 
 -- this table is to ensure 3NF normalization
 CREATE TABLE Check_Fever (
     temp INTEGER PRIMARY KEY,
-    fever INTEGER DEFAULT 0 -- 1 is fever
+    fever INTEGER DEFAULT 0, -- 1 is fever
+    CHECK (temp > 34 and temp < 43)
 );
 
 CREATE TABLE Health_Declarations (
     date    DATE,
-    temp    INTEGER CHECK (temp > 34 and temp < 43),
+    temp    INTEGER,
     eid     INTEGER,
     PRIMARY KEY (date, eid),
     FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
-    FOREIGN KEY (temp) REFERENCES check_fever(temp)
+    FOREIGN KEY (temp) REFERENCES check_fever(temp),
+    CHECK (temp > 34 and temp < 43)
 );

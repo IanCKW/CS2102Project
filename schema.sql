@@ -56,7 +56,7 @@ CREATE TABLE Updates(
     new_cap INTEGER,
     room    INTEGER,
     floor   INTEGER,
-    m_eid INTEGER,
+    m_eid INTEGER NOT NULL,
     PRIMARY KEY(date, room, floor),
     FOREIGN KEY (room, floor) REFERENCES Meeting_rooms (room, floor)
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
@@ -81,7 +81,7 @@ CREATE TABLE Approves (
     date    DATE,
     room    INTEGER,
     floor   INTEGER,
-    b_eid     INTEGER,
+    b_eid   INTEGER,
     m_eid   INTEGER,
     PRIMARY KEY (b_eid, time, date, room, floor),
     FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions (b_eid, time, date, room, floor) 

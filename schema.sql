@@ -56,9 +56,11 @@ CREATE TABLE Updates(
     new_cap INTEGER,
     room    INTEGER,
     floor   INTEGER,
+    m_eid INTEGER,
     PRIMARY KEY(date, room, floor),
-    FOREIGN KEY (room, floor) REFERENCES Meeting_rooms (room, floor) 
-    ON DELETE CASCADE -- ON UPDATES NO ACTION
+    FOREIGN KEY (room, floor) REFERENCES Meeting_rooms (room, floor)
+    ON DELETE CASCADE, -- ON UPDATES NO ACTION
+    FOREIGN KEY (m_eid) REFERENCES Managers(eid)
 );
 
 CREATE TABLE Sessions (
@@ -66,11 +68,11 @@ CREATE TABLE Sessions (
     date    DATE,
     room    INTEGER,
     floor   INTEGER,
-    eid     INTEGER NOT NULL,
+    b_eid     INTEGER NOT NULL,
     FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
-    FOREIGN KEY (eid) REFERENCES Bookers (eid) ON UPDATE CASCADE,
-    PRIMARY KEY (eid, time, date, room, floor),
+    FOREIGN KEY (b_eid) REFERENCES Bookers (eid) ON UPDATE CASCADE,
+    PRIMARY KEY (b_eid, time, date, room, floor),
     CHECK (time >= 0 AND time < 24)
 );
 
@@ -79,10 +81,10 @@ CREATE TABLE Approves (
     date    DATE,
     room    INTEGER,
     floor   INTEGER,
-    eid     INTEGER,
+    b_eid     INTEGER,
     m_eid   INTEGER,
-    PRIMARY KEY (eid, time, date, room, floor),
-    FOREIGN KEY (eid, time, date, room, floor) REFERENCES Sessions (eid, time, date, room, floor) 
+    PRIMARY KEY (b_eid, time, date, room, floor),
+    FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions (b_eid, time, date, room, floor) 
     ON DELETE CASCADE,
     FOREIGN KEY (m_eid) REFERENCES Managers (eid)
     ON UPDATE CASCADE,
@@ -97,7 +99,7 @@ CREATE TABLE Joins (
     b_eid     INTEGER,
     e_eid   INTEGER,
     PRIMARY KEY (time, date, room, floor, b_eid, e_eid),
-    FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions(eid, time, date, room, floor)
+    FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions(b_eid, time, date, room, floor)
     ON DELETE CASCADE,
     FOREIGN KEY (e_eid) REFERENCES Employees (eid)
     ON UPDATE CASCADE,
@@ -120,3 +122,5 @@ CREATE TABLE Health_Declarations (
     FOREIGN KEY (temp) REFERENCES check_fever(temp),
     CHECK (temp > 34 and temp < 43)
 );
+
+

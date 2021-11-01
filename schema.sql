@@ -94,10 +94,10 @@ CREATE TABLE Joins (
     date    DATE,
     room    INTEGER,
     floor   INTEGER,
-    eid     INTEGER,
+    b_eid     INTEGER,
     e_eid   INTEGER,
-    PRIMARY KEY (time, date, room, floor, eid),
-    FOREIGN KEY (eid, time, date, room, floor) REFERENCES Sessions(eid, time, date, room, floor)
+    PRIMARY KEY (time, date, room, floor, b_eid, e_eid),
+    FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions(eid, time, date, room, floor)
     ON DELETE CASCADE,
     FOREIGN KEY (e_eid) REFERENCES Employees (eid)
     ON UPDATE CASCADE,
@@ -120,40 +120,3 @@ CREATE TABLE Health_Declarations (
     FOREIGN KEY (temp) REFERENCES check_fever(temp),
     CHECK (temp > 34 and temp < 43)
 );
-
-
-
-
-
-CREATE OR REPLACE FUNCTION check_approves()
-RETURNS TRIGGER AS $$
-DECLARE
-    m_department_id INTEGER; -- manager
-    s_department_id INTEGER; -- session
-
-BEGIN
-    
-    select COALESCE(e.did,-1) into m_department_id 
-    from Employees e, Managers m
-    where e.eid = m.eid AND NEW.eid = m.eid;
-
-    select COALESCE(mr.did, -1) into s_department_id
-    from Meeting_Rooms mr
-    where mr.room = NEW.room AND mr.floor = NEW.floor;
-
-    if m_department_id < 0 OR s_department_id < 0 or m_department_id <> s_department_id then
-        RAISE NOTICE "The manager doesn't come from the same dep as the meeting room";
-        return NULL;
-    else
-        return NEW;
-    end if;
-
-END;
-$$LANGUAGE plpgsql;
-
-CREATE TRIGGER approves_check
-BEFORE INSERT OR UPDATE ON Approves
-FOR EACH ROW 
-EXECUTE FUNCTION check_approves();
-
-

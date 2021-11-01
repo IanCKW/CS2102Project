@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS Employees, Contacts, Juniors, Seniors, Bookers, Managers, Sessions, 
+DROP TABLE IF EXISTS Employees, Juniors, Seniors, Bookers, Managers, Sessions, 
 Departments, Meeting_Rooms, Updates, Approves, Joins, Health_Declarations, Check_Fever CASCADE;
 
 CREATE TABLE Departments (
@@ -67,11 +67,10 @@ CREATE TABLE Sessions (
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER NOT NULL,
-    PRIMARY KEY (time, date, room, floor),
     FOREIGN KEY (room, floor) REFERENCES Meeting_Rooms (room, floor)
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
-    FOREIGN KEY (eid) REFERENCES Bookers (eid)
-    ON UPDATE CASCADE,
+    FOREIGN KEY (eid) REFERENCES Bookers (eid) ON UPDATE CASCADE,
+    PRIMARY KEY (eid, time, date, room, floor),
     CHECK (time >= 0 AND time < 2400)
 );
 
@@ -81,10 +80,11 @@ CREATE TABLE Approves (
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER,
-    PRIMARY KEY (time, date, room, floor),
-    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor) 
+    m_eid   INTEGER,
+    PRIMARY KEY (eid, time, date, room, floor),
+    FOREIGN KEY (eid, time, date, room, floor) REFERENCES Sessions (eid, time, date, room, floor) 
     ON DELETE CASCADE,
-    FOREIGN KEY (eid) REFERENCES Managers (eid)
+    FOREIGN KEY (m_eid) REFERENCES Managers (eid)
     ON UPDATE CASCADE,
     CHECK (time >= 0 AND time < 2400)
 );
@@ -95,10 +95,11 @@ CREATE TABLE Joins (
     room    INTEGER,
     floor   INTEGER,
     eid     INTEGER,
+    e_eid   INTEGER,
     PRIMARY KEY (time, date, room, floor, eid),
-    FOREIGN KEY (time, date, room, floor) REFERENCES Sessions(time, date, room, floor)
+    FOREIGN KEY (eid, time, date, room, floor) REFERENCES Sessions(eid, time, date, room, floor)
     ON DELETE CASCADE,
-    FOREIGN KEY (eid) REFERENCES Employees (eid)
+    FOREIGN KEY (e_eid) REFERENCES Employees (eid)
     ON UPDATE CASCADE,
     CHECK (time >= 0 AND time < 2400)
 );

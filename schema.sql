@@ -71,7 +71,7 @@ CREATE TABLE Sessions (
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
     FOREIGN KEY (eid) REFERENCES Bookers (eid) ON UPDATE CASCADE,
     PRIMARY KEY (eid, time, date, room, floor),
-    CHECK (time >= 0 AND time < 2400)
+    CHECK (time >= 0 AND time < 24)
 );
 
 CREATE TABLE Approves (
@@ -86,7 +86,7 @@ CREATE TABLE Approves (
     ON DELETE CASCADE,
     FOREIGN KEY (m_eid) REFERENCES Managers (eid)
     ON UPDATE CASCADE,
-    CHECK (time >= 0 AND time < 2400)
+    CHECK (time >= 0 AND time < 24)
 );
 
 CREATE TABLE Joins (
@@ -101,7 +101,7 @@ CREATE TABLE Joins (
     ON DELETE CASCADE,
     FOREIGN KEY (e_eid) REFERENCES Employees (eid)
     ON UPDATE CASCADE,
-    CHECK (time >= 0 AND time < 2400)
+    CHECK (time >= 0 AND time < 24)
 );
 
 -- this table is to ensure 3NF normalization

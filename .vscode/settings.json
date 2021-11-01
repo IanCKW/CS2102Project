@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "dummyconnection",
+            "database": "cs2102_project_0",
+            "username": "postgres",
+            "password": "pTitanium98s"
+        }
+    ]
+}

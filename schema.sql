@@ -52,10 +52,11 @@ CREATE TABLE Meeting_Rooms (
 );
 
 CREATE TABLE Updates(
-    date    DATE primary key,
+    date    DATE,
     new_cap INTEGER,
     room    INTEGER,
     floor   INTEGER,
+    PRIMARY KEY(date, room, floor),
     FOREIGN KEY (room, floor) REFERENCES Meeting_rooms (room, floor) 
     ON DELETE CASCADE -- ON UPDATES NO ACTION
 );
@@ -71,7 +72,7 @@ CREATE TABLE Sessions (
     ON DELETE CASCADE, -- ON UPDATES NO ACTION
     FOREIGN KEY (eid) REFERENCES Bookers (eid)
     ON UPDATE CASCADE,
-    CHECK (time >= 0 AND time < 24)
+    CHECK (time >= 0 AND time < 2400)
 );
 
 CREATE TABLE Approves (
@@ -85,7 +86,7 @@ CREATE TABLE Approves (
     ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Managers (eid)
     ON UPDATE CASCADE,
-    CHECK (time >= 0 AND time < 24)
+    CHECK (time >= 0 AND time < 2400)
 );
 
 CREATE TABLE Joins (
@@ -99,22 +100,25 @@ CREATE TABLE Joins (
     ON DELETE CASCADE,
     FOREIGN KEY (eid) REFERENCES Employees (eid)
     ON UPDATE CASCADE,
-    CHECK (time >= 0 AND time < 24)
+    CHECK (time >= 0 AND time < 2400)
 );
 
 -- this table is to ensure 3NF normalization
 CREATE TABLE Check_Fever (
-    temp INTEGER PRIMARY KEY,
+    temp FLOAT PRIMARY KEY,
     fever INTEGER DEFAULT 0, -- 1 is fever
     CHECK (temp > 34 and temp < 43)
 );
 
 CREATE TABLE Health_Declarations (
     date    DATE,
-    temp    INTEGER,
+    temp    FLOAT,
     eid     INTEGER,
     PRIMARY KEY (date, eid),
     FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
     FOREIGN KEY (temp) REFERENCES check_fever(temp),
     CHECK (temp > 34 and temp < 43)
 );
+
+
+

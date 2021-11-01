@@ -697,13 +697,6 @@ insert into Joins (time, date, room, floor, eid) values (0900, '2021-03-25', 2, 
 insert into Joins (time, date, room, floor, eid) values (0900, '2021-03-25', 2, 11, 42);
 insert into Joins (time, date, room, floor, eid) values (0900, '2021-03-25', 2, 11, 6);
 
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 71);
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 40);
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 4);
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 76);
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 53);
-insert into Joins (time, date, room, floor, eid) values (1600, '2020-04-29', 10, 9, 59);
-
 insert into Joins (time, date, room, floor, eid) values (1000, '2020-07-21', 10, 7, 60);
 insert into Joins (time, date, room, floor, eid) values (1000, '2020-07-21', 10, 7, 67);
 insert into Joins (time, date, room, floor, eid) values (1000, '2020-07-21', 10, 7, 78);

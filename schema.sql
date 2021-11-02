@@ -96,7 +96,7 @@ CREATE TABLE Joins (
     date    DATE,
     room    INTEGER,
     floor   INTEGER,
-    b_eid     INTEGER,
+    b_eid   INTEGER,
     e_eid   INTEGER,
     PRIMARY KEY (time, date, room, floor, b_eid, e_eid),
     FOREIGN KEY (b_eid, time, date, room, floor) REFERENCES Sessions(b_eid, time, date, room, floor)
@@ -108,7 +108,7 @@ CREATE TABLE Joins (
 
 -- this table is to ensure 3NF normalization
 CREATE TABLE Check_Fever (
-    temp FLOAT PRIMARY KEY,
+    temp FLOAT PRIMARY KEY NOT NULL,
     fever INTEGER DEFAULT 0, -- 1 is fever
     CHECK (temp > 34 and temp < 43)
 );

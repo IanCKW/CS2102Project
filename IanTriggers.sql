@@ -4,14 +4,41 @@
 -------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------
 
-
---- APPROVE/ UPDATE --- 
 CREATE OR REPLACE FUNCTION check_resign(IN in_eid INT)
 RETURNS DATE AS $$
     SELECT COALESCE(e.resigned_date,'2000-01-01')
     FROM Employees e
     WHERE e.eid = in_eid;
 $$ LANGUAGE sql;
+
+
+----- REMOVAL OF FUTURE APPROVALS, BOOKED SESSIONS AND PARTICIPATION IN SESSIONS ------
+CREATE OR REPLACE FUNCTION future_rem()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF check_resign(NEW.eid) > '2000-01-01' THEN    
+        RAISE NOTICE 'Future sessions, approvals and joins will be removed';
+        
+        DELETE FROM Sessions s
+        WHERE NEW.eid = s.b_eid and s.date > NEW.resigned_date;
+
+        DELETE FROM Approves a
+        WHERE NEW.eid = a.m_eid and a.date > NEW.resigned_date;
+
+        DELETE FROM Joins j
+        WHERE NEW.eid = j.e_eid and j.date > NEW.resigned_date;
+
+    END IF;
+RETURN NEW;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER rem_future
+AFTER INSERT OR UPDATE ON Employees
+FOR EACH ROW
+EXECUTE FUNCTION future_rem();
+
+--- APPROVE/ UPDATE --- 
 
 CREATE OR REPLACE FUNCTION updates_resigned_check()
 RETURNS TRIGGER AS $$
@@ -83,7 +110,7 @@ EXECUTE FUNCTION join_resigned_check();
 
 -------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------
-----------------------TRIGGERS, FUNC, TRIGGER FUNCS FOR APPROVES, UPDATES, HD, non_compliance----------------------
+----------------------CONSTRAINT TRIGGERS, FUNC, TRIGGER FUNCS FOR APPROVES, UPDATES, HD---------------------------
 -------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------
 
@@ -172,7 +199,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.temp > 37.0 THEN
         RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days';
-        Delete FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
+        DELETE FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
             j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR

@@ -1,4 +1,3 @@
-psql
 
 CREATE OR REPLACE FUNCTION in_updates() 
 RETURNS TRIGGER AS $$

@@ -1,5 +1,5 @@
 
--- checks that the manager is from the same department as the meeting room
+-- TRIGGER FUNCTION THAT CHECKS THAT THE MANAGER IS FROM THE SAME DEPARTMENT AS THE MEETING ROOM
 CREATE OR REPLACE FUNCTION check_manager_from_same_dep_as_mr()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -31,19 +31,7 @@ BEFORE INSERT OR UPDATE ON Approves
 FOR EACH ROW 
 EXECUTE FUNCTION check_manager_from_same_dep_as_mr();
 
--- insert into Meeting_Rooms (room, floor, rname, did) values (8, 10, 'Osaka', 9);
--- insert into Meeting_Rooms (room, floor, rname, did) values (7, 9, 'Manokwari', 8);
-
--- insert into Updates (date, new_cap, room, floor) values ('2020-07-01', 10, 8, 10);
--- insert into Updates (date, new_cap, room, floor) values ('2020-07-01', 10, 7, 9);
-
--- insert into Sessions (time, date, room, floor, eid) values (1900, '2021-07-23', 8, 10, 7);
--- insert into Sessions (time, date, room, floor, eid) values (1200, '2020-12-30', 7, 9, 87);
-
-DROP TRIGGER IF EXISTS approves_check ON Approves;
-insert into Approves (time, date, room, floor,b_eid, m_eid) values (19, '2021-07-23', 8, 10, 7,63);
-insert into Approves (time, date, room, floor,b_eid, m_eid) values (12, '2020-12-30', 7, 9, 87, 80);
-
+--------------------------------------------------------------------------------------------------------------------
 
 -- Checks that the Manager adding to Updates is from the same department as the meeting room that it is updating
 
@@ -52,11 +40,10 @@ BEFORE INSERT OR UPDATE ON Updates
 FOR EACH ROW 
 EXECUTE FUNCTION check_manager_from_same_dep_as_mr();
 
+--------------------------------------------------------------------------------------------------------------------
 
-insert into Updates (date, new_cap, room, floor,m_eid) values ('2020-07-02', 10, 8, 10, 42);
 
-
--- Create a function that can find everyone that is a close contact
+-- FUNCTION THAT CAN FIND EVERYONE THAT IS A CLOSE CONTACT
 CREATE OR REPLACE FUNCTION close_contacts(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
@@ -73,7 +60,7 @@ RETURNS SETOF INT AS $$
     
 $$ LANGUAGE sql ;
 
-
+-- TRIGGER FUNC TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -91,11 +78,29 @@ END;
 $$LANGUAGE plpgsql;
 
 
-
--- SELECT * FROM close_contacts(87,'2020-12-30');
 CREATE TRIGGER close_contact_rem
 BEFORE INSERT OR UPDATE ON Health_Declarations
 FOR EACH ROW 
 EXECUTE FUNCTION rem_close_contacts();
 
- insert into Health_Declarations(date, temp, eid) values ('2020/07/24',37.8,54);
+
+--------------------------------------------------------------------------------------------------------------------
+
+ -- TRIGGER FUNC TO REMOVE SESSIONS AND APPROVES WHICH HAVE b_eid == booker_eid
+CREATE OR REPLACE FUNCTION rem_sessions() -- cascades to delete approves and Joins
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.temp > 37.0 then 
+        Delete FROM Sessions s
+        WHERE NEW.eid = s.b_eid AND s.date >= NEW.date;
+    end if;
+Return new;
+END;
+$$LANGUAGE plpgsql;
+
+
+CREATE TRIGGER session_rem
+BEFORE INSERT OR UPDATE ON Health_Declarations
+FOR EACH ROW 
+EXECUTE FUNCTION rem_sessions();
+

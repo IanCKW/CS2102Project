@@ -17,6 +17,7 @@ BEFORE INSERT OR UPDATE ON Approves
 FOR EACH ROW 
 EXECUTE FUNCTION approve_future();
 
+--------------------------------------------------------------------------------------------------------------------
 
 -- TRIGGER FUNCTION THAT CHECKS THAT THE MANAGER IS FROM THE SAME DEPARTMENT AS THE MEETING ROOM
 CREATE OR REPLACE FUNCTION check_manager_from_same_dep_as_mr()
@@ -63,7 +64,7 @@ EXECUTE FUNCTION check_manager_from_same_dep_as_mr();
 
 
 -- FUNCTION THAT CAN FIND EVERYONE THAT IS A CLOSE CONTACT
-CREATE OR REPLACE FUNCTION close_contacts(IN sick_eid INT, IN sick_date DATE)
+CREATE OR REPLACE FUNCTION contact_tracing(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
     SELECT j2.e_eid as e_eid
@@ -83,7 +84,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.temp > 37.0 THEN
         RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days';
-        Delete FROM Joins j USING close_contacts(NEW.eid, NEW.date) cc 
+        Delete FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
             j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
@@ -108,9 +109,9 @@ EXECUTE FUNCTION rem_close_contacts();
 CREATE OR REPLACE FUNCTION rem_sessions() -- cascades to delete approves and Joins
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.temp > 37.0 then 
+    IF NEW.temp > 37.0 THEN 
         RAISE NOTICE 'This employee has a fever, all future sessions booked by them are deleted';
-        DELETE FROM Sessions s
+        DELETE FROM SESSIONS s
         WHERE NEW.eid = s.b_eid AND s.date >= NEW.date;
     END IF;
 RETURN new;
@@ -123,9 +124,24 @@ BEFORE INSERT OR UPDATE ON Health_Declarations
 FOR EACH ROW 
 EXECUTE FUNCTION rem_sessions();
 
+--------------------------------------------------------------------------------------------------------
+------APPLICATION FUNCTIONS--------
+--------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
+RETURNS TABLE(id INT, c INT) AS $$
+
+    SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
+    FROM Employees e 
+    LEFT OUTER JOIN  
+    (SELECT * FROM Health_Declarations h1 WHERE h1.date >= START_DATE AND h1.date <= end_date)
+    AS h ON e.eid = h.eid
+    GROUP BY e.eid;
+
+$$ LANGUAGE sql ;
 
 
-
+EXECUTE FUNCTION rem_close_contacts();
 
 
 

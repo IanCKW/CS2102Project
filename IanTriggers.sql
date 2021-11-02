@@ -1,3 +1,91 @@
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+------------------------TRIGGERS, FUNC, TRIGGER FUNCS FOR RESIGNATION----------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+
+
+--- APPROVE/ UPDATE --- 
+CREATE OR REPLACE FUNCTION check_resign(IN in_eid INT)
+RETURNS DATE AS $$
+    SELECT COALESCE(e.resigned_date,'2000-01-01')
+    FROM Employees e
+    WHERE e.eid = in_eid;
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION updates_resigned_check()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF check_resign(NEW.m_eid) > '2000-01-01' THEN    
+        RAISE NOTICE 'This employee has resigned';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER check_resigned_updates
+BEFORE INSERT OR UPDATE ON Updates
+FOR EACH ROW 
+EXECUTE FUNCTION updates_resigned_check();
+
+CREATE TRIGGER check_resigned_approves
+BEFORE INSERT OR UPDATE ON Approves
+FOR EACH ROW 
+EXECUTE FUNCTION updates_resigned_check();
+
+
+--- BOOK --- 
+CREATE OR REPLACE FUNCTION book_resigned_check()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF check_resign(NEW.b_eid) > '2000-01-01' THEN    
+        RAISE NOTICE 'This employee has resigned';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER check_resigned_book
+BEFORE INSERT OR UPDATE ON Sessions
+FOR EACH ROW 
+EXECUTE FUNCTION book_resigned_check();
+
+
+--- JOIN ---
+CREATE OR REPLACE FUNCTION join_resigned_check()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF check_resign(NEW.e_eid) > '2000-01-01' THEN    
+        RAISE NOTICE 'This employee has resigned';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER check_resigned_join
+BEFORE INSERT OR UPDATE ON Joins
+FOR EACH ROW 
+EXECUTE FUNCTION join_resigned_check();
+
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+----------------------TRIGGERS, FUNC, TRIGGER FUNCS FOR APPROVES, UPDATES, HD, non_compliance----------------------
+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
 
 -- TRIGGER FUNCTION THAT CHECKS THAT APPROVES IS FOR FUTURE MEETINGS
 CREATE OR REPLACE FUNCTION approve_future()
@@ -19,7 +107,7 @@ EXECUTE FUNCTION approve_future();
 
 --------------------------------------------------------------------------------------------------------------------
 
--- TRIGGER FUNCTION THAT CHECKS THAT THE MANAGER IS FROM THE SAME DEPARTMENT AS THE MEETING ROOM
+-- TRIGGER FUNCTION AND TRIGGER THAT CHECKS THAT THE MANAGER IS FROM THE SAME DEPARTMENT AS THE MEETING ROOM
 CREATE OR REPLACE FUNCTION check_manager_from_same_dep_as_mr()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -78,7 +166,7 @@ RETURNS SETOF INT AS $$
     
 $$ LANGUAGE sql ;
 
--- TRIGGER FUNC TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS
+-- TRIGGER FUNC AND TRIGGER TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -105,7 +193,7 @@ EXECUTE FUNCTION rem_close_contacts();
 
 --------------------------------------------------------------------------------------------------------------------
 
- -- TRIGGER FUNC TO REMOVE SESSIONS AND APPROVES WHICH HAVE b_eid == booker_eid
+ -- TRIGGER FUNC AND TRIGGER TO REMOVE SESSIONS AND APPROVES WHICH HAVE b_eid == booker_eid
 CREATE OR REPLACE FUNCTION rem_sessions() -- cascades to delete approves and Joins
 RETURNS TRIGGER AS $$
 BEGIN
@@ -125,9 +213,12 @@ FOR EACH ROW
 EXECUTE FUNCTION rem_sessions();
 
 --------------------------------------------------------------------------------------------------------
-------APPLICATION FUNCTIONS--------
+--------------------------------------------------------------------------------------------------------
+-------------------------------------------APPLICATION FUNCTIONS----------------------------------------
+--------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------
 
+-- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
 RETURNS TABLE(id INT, c INT) AS $$
 
@@ -139,9 +230,6 @@ RETURNS TABLE(id INT, c INT) AS $$
     GROUP BY e.eid;
 
 $$ LANGUAGE sql ;
-
-
-EXECUTE FUNCTION rem_close_contacts();
 
 
 

@@ -1,4 +1,23 @@
 
+-- TRIGGER FUNCTION THAT CHECKS THAT APPROVES IS FOR FUTURE MEETINGS
+CREATE OR REPLACE FUNCTION approve_future()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.date < CURRENT_DATE then
+        RAISE NOTICE 'Approvals must be for future dates';
+        Return NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER future_approve
+BEFORE INSERT OR UPDATE ON Approves
+FOR EACH ROW 
+EXECUTE FUNCTION approve_future();
+
+
 -- TRIGGER FUNCTION THAT CHECKS THAT THE MANAGER IS FROM THE SAME DEPARTMENT AS THE MEETING ROOM
 CREATE OR REPLACE FUNCTION check_manager_from_same_dep_as_mr()
 RETURNS TRIGGER AS $$
@@ -8,20 +27,20 @@ DECLARE
 
 BEGIN
     
-    select COALESCE(e.did,-1) into m_department_id 
-    from Employees e, Managers m
-    where e.eid = m.eid AND NEW.m_eid = m.eid;
+    SELECT COALESCE(e.did,-1) INTO m_department_id 
+    FROM Employees e, Managers m
+    WHERE e.eid = m.eid AND NEW.m_eid = m.eid;
 
-    select COALESCE(mr.did, -1) into target_department_id
-    from Meeting_Rooms mr
-    where mr.room = NEW.room AND mr.floor = NEW.floor;
+    SELECT COALESCE(mr.did, -1) INTO target_department_id
+    FROM Meeting_Rooms mr
+    WHERE mr.room = NEW.room AND mr.floor = NEW.floor;
 
-    if  m_department_id <> target_department_id then
+    IF  m_department_id <> target_department_id THEN
         RAISE NOTICE 'The manager doesnt come from the same dep as the meeting room';
-        return NULL;
-    else
-        return NEW;
-    end if;
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
 
 END;
 $$LANGUAGE plpgsql;
@@ -48,15 +67,13 @@ CREATE OR REPLACE FUNCTION close_contacts(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
     SELECT j2.e_eid as e_eid
-    from Approves a, Sessions s, Joins j1, Joins j2
-    -- get approved sessions
-    where a.room = s.room AND a.floor = s.floor AND a.date = s.date AND a.time = s.time AND a.b_eid = s.b_eid
-    -- get participants of approved meetings
-    AND a.room = j1.room AND a.floor = j1.floor AND a.date = j1.date AND a.time = j1.time
+    FROM Sessions s, Joins j1, Joins j2
+    -- get participants of meetings
+    WHERE (s.room, s.floor, s.date, s.time, s.b_eid) = (j1.room, j1.floor, j1.date, j1.time, s.b_eid)
     -- get sessions that eid was in in the past 3 days
-    AND j1.e_eid = sick_eid AND (j1.date = sick_date OR j1.date = sick_date + INTERVAL '-1 day' OR j1.date = sick_date + INTERVAL '-2 day' OR j1.date = sick_date + INTERVAL '-3 day')
+    AND j1.e_eid = sick_eid AND (j1.date = sick_date OR j1.date = sick_date - INTERVAL '1 day' OR j1.date = sick_date - INTERVAL '2 day' OR j1.date = sick_date - INTERVAL '3 day')
     -- get close contacts;
-    AND j1.room = j2.room AND j1.floor = j2.floor AND j1.date = j2.date AND j1.time = j2.time AND j1.b_eid = j2.b_eid;
+    AND (j1.room, j1.floor, j1.date, j1.time, j1.b_eid) = (j2.room, j2.floor, j2.date, j2.time, j2.b_eid)
     
 $$ LANGUAGE sql ;
 
@@ -64,7 +81,8 @@ $$ LANGUAGE sql ;
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.temp > 37.0 then
+    IF NEW.temp > 37.0 THEN
+        RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days';
         Delete FROM Joins j USING close_contacts(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
@@ -72,8 +90,8 @@ BEGIN
             j.date = NEW.date + INTERVAL '2 day'OR j.date = NEW.date + INTERVAL '3 day'OR
             j.date = NEW.date + INTERVAL '4 day'OR j.date = NEW.date + INTERVAL '5 day'OR
             j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day';
-    end if;
-Return new;
+    END IF;
+RETURN new;
 END;
 $$LANGUAGE plpgsql;
 
@@ -91,10 +109,11 @@ CREATE OR REPLACE FUNCTION rem_sessions() -- cascades to delete approves and Joi
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.temp > 37.0 then 
-        Delete FROM Sessions s
+        RAISE NOTICE 'This employee has a fever, all future sessions booked by them are deleted';
+        DELETE FROM Sessions s
         WHERE NEW.eid = s.b_eid AND s.date >= NEW.date;
-    end if;
-Return new;
+    END IF;
+RETURN new;
 END;
 $$LANGUAGE plpgsql;
 
@@ -103,4 +122,13 @@ CREATE TRIGGER session_rem
 BEFORE INSERT OR UPDATE ON Health_Declarations
 FOR EACH ROW 
 EXECUTE FUNCTION rem_sessions();
+
+
+
+
+
+
+
+
+
 

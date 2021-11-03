@@ -8,6 +8,8 @@ DROP TRIGGER IF EXISTS meeting_cancelled ON Joins;
 DROP TRIGGER IF EXISTS approved_check_join ON Joins;
 DROP TRIGGER IF EXISTS resignation_check ON Joins;
 DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
+DROP TRIGGER IF EXISTS session_participation_check ON Sessions;
+DROP TRIGGER IF EXISTS contact_check ON Sessions;
 
 --The employee booking the room immediately joins the booked meeting
 CREATE OR REPLACE FUNCTION automatically_join()

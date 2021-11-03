@@ -197,7 +197,7 @@ $$ LANGUAGE sql ;
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.temp > 37.0 THEN
+    IF NEW.temp > 37.5 THEN
         RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days';
         DELETE FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
@@ -244,6 +244,14 @@ EXECUTE FUNCTION rem_sessions();
 -------------------------------------------APPLICATION FUNCTIONS----------------------------------------
 --------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------
+
+---DECLARE HEALTH ---
+CREATE OR REPLACE FUNCTION declare_health(eid1 INT, date1 DATE, temp1 FLOAT)
+RETURNS VOID AS $$
+BEGIN
+INSERT INTO Health_Declarations (eid,date,temp) VALUES (eid1,date1,temp1);
+END;
+$$ LANGUAGE plpgsql;
 
 -- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)

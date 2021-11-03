@@ -1,7 +1,7 @@
-CREATE OR REPLACE FUNCTION add_department(departmentID integer, departmentname text)
+CREATE OR REPLACE FUNCTION add_department(departmentname text)
 RETURNS VOID AS $$
 BEGIN
-INSERT INTO departments (did, dname) values (departmentID,departmentname );
+INSERT INTO departments (dname) values (departmentname );
 RAISE NOTICE 'Department added';
 END;
 $$ LANGUAGE plpgsql;

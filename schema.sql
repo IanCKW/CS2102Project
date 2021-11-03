@@ -2,12 +2,12 @@ DROP TABLE IF EXISTS Employees, Juniors, Seniors, Bookers, Managers, Sessions,
 Departments, Meeting_Rooms, Updates, Approves, Joins, Health_Declarations, Check_Fever CASCADE;
 
 CREATE TABLE Departments (
-    did INTEGER PRIMARY KEY,
+    did SERIAL PRIMARY KEY,
     dname TEXT
 );
 
 CREATE TABLE Employees (
-    eid INTEGER PRIMARY KEY,
+    eid SERIAL PRIMARY KEY,
     ename TEXT,
     email TEXT UNIQUE,
     resigned_date DATE,

@@ -28,7 +28,7 @@ RETURNS TABLE(floor_no INT, room_no INT, meeting_date DATE, meeting_time INT) AS
     AND j.room = a.room
     AND j.floor = a.floor
     AND j.b_eid = a.b_eid
-    AND j.e_eid = input_eid;
+    AND j.e_eid = input_eid
     AND j.date >= start_date
     ORDER BY j.date, j.time;
 $$ LANGUAGE sql;
@@ -45,10 +45,12 @@ RETURNS TABLE(floor_no INT, room_no INT, meeting_date DATE, meeting_time INT, bo
         AND s.floor = a.floor
         AND s.b_eid = a.b_eid)
     AND s.date >= start_date
-    AND EXISTS (SELECT mt.room, mt.floor
-        FROM ((Employees e JOIN Managers m ON e.eid = m.eid) mg JOIN Meeting_Rooms mr ON mg.did = mr.did) mt
-        WHERE mt.eid = input_eid
-        AND mt.room = s.room
-        AND mt.floor = s.floor)
+    AND EXISTS (SELECT r.room, r.floor
+        FROM Employees e, Managers m, Meeting_Rooms r
+        WHERE e.eid = m.eid
+        AND e.did = r.did
+        AND r.room = s.room
+        AND r.floor = s.floor
+        AND e.eid = input_eid)
     ORDER BY s.date, s.time;
 $$ LANGUAGE sql;

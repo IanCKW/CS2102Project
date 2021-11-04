@@ -6,7 +6,7 @@
 
 CREATE OR REPLACE FUNCTION check_resign(IN in_eid INT)
 RETURNS DATE AS $$
-    SELECT COALESCE(e.resigned_date,'2000-01-01')
+    SELECT COALESCE(e.resigned_date,'3000-01-01')
     FROM Employees e
     WHERE e.eid = in_eid;
 $$ LANGUAGE sql;
@@ -16,7 +16,7 @@ $$ LANGUAGE sql;
 CREATE OR REPLACE FUNCTION future_rem()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF check_resign(NEW.eid) > '2000-01-01' THEN    
+    IF check_resign(NEW.eid) < '3000-01-01' THEN    
         RAISE NOTICE 'Future sessions, approvals and joins will be removed';
         
         DELETE FROM Sessions s
@@ -43,7 +43,7 @@ EXECUTE FUNCTION future_rem();
 CREATE OR REPLACE FUNCTION updates_resigned_check()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF check_resign(NEW.m_eid) > '2000-01-01' THEN    
+    IF check_resign(NEW.m_eid) < NEW.date THEN    
         RAISE NOTICE 'This employee has resigned';
         RETURN NULL;
     ELSE
@@ -67,7 +67,7 @@ EXECUTE FUNCTION updates_resigned_check();
 CREATE OR REPLACE FUNCTION book_resigned_check()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF check_resign(NEW.b_eid) > '2000-01-01' THEN    
+    IF check_resign(NEW.b_eid) < NEW.date THEN    
         RAISE NOTICE 'This employee has resigned';
         RETURN NULL;
     ELSE
@@ -86,7 +86,7 @@ EXECUTE FUNCTION book_resigned_check();
 CREATE OR REPLACE FUNCTION join_resigned_check()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF check_resign(NEW.e_eid) > '2000-01-01' THEN    
+    IF check_resign(NEW.e_eid) < NEW.date THEN    
         RAISE NOTICE 'This employee has resigned';
         RETURN NULL;
     ELSE
@@ -267,6 +267,10 @@ RETURNS TABLE(id INT, c INT) AS $$
 $$ LANGUAGE sql ;
 
 
+
+
+------
+-- For 
 
 
 

@@ -119,7 +119,6 @@ CREATE TABLE Health_Declarations (
     eid     INTEGER,
     PRIMARY KEY (date, eid),
     FOREIGN KEY (eid) REFERENCES Employees(eid) ON UPDATE CASCADE,
-    FOREIGN KEY (temp) REFERENCES check_fever(temp),
     CHECK (temp > 34 and temp < 43)
 );
 

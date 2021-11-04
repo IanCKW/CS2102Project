@@ -52,20 +52,12 @@ CREATE OR REPLACE FUNCTION check_date_time_join()
 RETURNS TRIGGER AS $$
 DECLARE
     date_current DATE;
-    time_current INTEGER;
 BEGIN
     SELECT CURRENT_DATE INTO date_current;
-    SELECT CONVERT(TIME, GETDATE()) INTO time_current;
 
     IF date_current < NEW.date THEN
         RAISE NOTICE 'Session is already over';
         RETURN NULL;
-    ELSE IF date_current = NEW.date THEN
-        IF time_current < NEW.time THEN
-            RAISE NOTICE 'Session is already over';
-            RETURN NULL;
-        ELSE
-            RETURN NEW;
     ELSE
         RETURN NEW;
     END IF;
@@ -138,20 +130,12 @@ CREATE OR REPLACE FUNCTION check_date_time_book()
 RETURNS TRIGGER AS $$
 DECLARE
     date_current DATE;
-    time_current INTEGER;
 BEGIN
     SELECT CURRENT_DATE INTO date_current;
-    SELECT CONVERT(TIME, GETDATE()) INTO time_current;
 
     IF date_current < NEW.date THEN
         RAISE NOTICE 'Cannot book in the past';
         RETURN NULL;
-    ELSE IF date_current = NEW.date THEN
-        IF time_current < NEW.time THEN
-            RAISE NOTICE 'Cannot book in the past';
-            RETURN NULL;
-        ELSE
-            RETURN NEW;
     ELSE
         RETURN NEW;
     END IF;
@@ -213,9 +197,7 @@ BEGIN
     FROM Employees e
     WHERE e.eid = NEW.e_eid;
 
-    IF resign_date IS NULL THEN
-        RETURN NEW;
-    ELSE IF resign_date > NEW.date THEN
+    IF resign_date IS NULL OR resign_date > NEW.date THEN
         RETURN NEW;
     ELSE
         RAISE NOTICE 'Employee has already resigned';
@@ -298,7 +280,7 @@ BEGIN
     WHERE hc.temp > 37.5;
 
     IF number_of_sick > 0 THEN
-        RAISE NOTICE 'Employee has been in contact with a sick employee in the past 3 days'
+        RAISE NOTICE 'Employee has been in contact with a sick employee in the past 3 days';
         RETURN NULL;
     ELSE
         RETURN NEW;

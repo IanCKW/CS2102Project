@@ -106,12 +106,7 @@ CREATE TABLE Joins (
     CHECK (time >= 0 AND time < 24)
 );
 
--- this table is to ensure 3NF normalization
-CREATE TABLE Check_Fever (
-    temp FLOAT PRIMARY KEY NOT NULL,
-    fever INTEGER DEFAULT 0, -- 1 is fever
-    CHECK (temp > 34 and temp < 43)
-);
+
 
 CREATE TABLE Health_Declarations (
     date    DATE,

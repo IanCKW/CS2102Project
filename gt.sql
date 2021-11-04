@@ -9,6 +9,7 @@ DROP TRIGGER IF EXISTS approved_check_join ON Joins;
 DROP TRIGGER IF EXISTS resignation_check ON Joins;
 DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
 DROP TRIGGER IF EXISTS session_participation_check ON Sessions;
+DROP FUNCTION IF EXISTS contact_trace(IN sick_eid INT, IN sick_date DATE);
 DROP TRIGGER IF EXISTS contact_check ON Sessions;
 
 --The employee booking the room immediately joins the booked meeting
@@ -269,18 +270,39 @@ AFTER INSERT OR UPDATE OR DELETE ON Sessions
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION check_session_participation();
 
---checks if an employee has been in contact with a sick employee in the past 3 days
+--checks if an employee has been in contact with a sick employee in the past 7 days
+CREATE OR REPLACE FUNCTION sick_contacts(IN checked_eid INT, IN checked_date DATE)
+RETURNS TABLE(sick_contact_id INT) AS $$
+    SELECT j2.e_eid AS sick_contact_id
+    FROM Joins j1, (SELECT j.time, j.date, j.room, j.floor, j.b_eid, j.e_eid, h.temp
+        FROM (Joins j JOIN Health_Declarations h ON (j.e_eid = h.eid AND j.date = h.date))) j2
+    WHERE j1.e_eid = checked_eid --find all sessions joined by checked employee
+    AND (j1.date = checked_date --find all sessions joined by checked employee in the past 7 days
+        OR j1.date = checked_date - INTERVAL '1 day' 
+        OR j1.date = checked_date - INTERVAL '2 day' 
+        OR j1.date = checked_date - INTERVAL '3 day'
+        OR j1.date = checked_date - INTERVAL '4 day'
+        OR j1.date = checked_date - INTERVAL '5 day'
+        OR j1.date = checked_date - INTERVAL '6 day'
+        OR j1.date = checked_date - INTERVAL '7 day')
+    AND j2.time = j1.time --find all other employees who joined the same sessions as the checked employee
+    AND j2.date = j1.date
+    AND j2.room = j1.room
+    AND j2.floor = j1.floor
+    AND j2.b_eid = j1.b_eid
+    AND j2.temp > 37.5; --find all sick employees who joined the same sessions as the checked employee
+$$ LANGUAGE sql;
+
 CREATE OR REPLACE FUNCTION check_contact()
 RETURNS TRIGGER AS $$
 DECLARE
-    number_of_sick INTEGER;
+    num_of_sick_contacts INTEGER;
 BEGIN
-    SELECT COUNT (*) INTO number_of_sick
-    FROM (Health_Declarations h JOIN contact_tracing(NEW.e_eid, NEW.date) c ON h.eid = c.e_eid) hc
-    WHERE hc.temp > 37.5;
+    SELECT COUNT (*) INTO num_of_sick_contacts
+    FROM sick_contacts(NEW.e_eid, NEW.date);
 
-    IF number_of_sick > 0 THEN
-        RAISE NOTICE 'Employee has been in contact with a sick employee in the past 3 days';
+    IF num_of_sick_contacts > 0 THEN
+        RAISE NOTICE 'Not allowed to join meeting as employee has been in contact with a sick personel in the past 7 days';
         RETURN NULL;
     ELSE
         RETURN NEW;

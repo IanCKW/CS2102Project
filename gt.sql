@@ -22,7 +22,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER join_automatically
-BEFORE INSERT OR UPDATE ON Sessions
+AFTER INSERT OR UPDATE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION automatically_join();
 
 --If an employee is having a fever, they cannot join a booked meeting (check the most recent temperature)
@@ -36,7 +36,7 @@ BEGIN
     WHERE hd.eid = NEW.e_eid;
 
     IF t > 37.5 THEN
-        RAISE NOTICE 'Employee has fever';
+        RAISE NOTICE 'Not allowed to join session as employee has fever';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -91,7 +91,7 @@ BEGIN
     AND j.b_eid = NEW.b_eid;
 
     IF current >= cap THEN
-        RAISE NOTICE 'Session is full';
+        RAISE NOTICE 'Unable to join as session is full';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -114,7 +114,7 @@ BEGIN
     WHERE hd.eid = NEW.b_eid;
 
     IF tem > 37.5 THEN
-        RAISE NOTICE 'Booker has fever';
+        RAISE NOTICE 'Not allowed to book as booker has fever';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -151,14 +151,18 @@ FOR EACH ROW EXECUTE FUNCTION check_date_time_book();
 CREATE OR REPLACE FUNCTION cancel_meeting()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM Sessions
-    WHERE b_eid = NEW.b_eid;
+    DELETE FROM Joins j
+    WHERE j.b_eid = NEW.b_eid;
+
+    DELETE FROM Sessions s
+    WHERE s.b_eid = NEW.b_eid;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER meeting_cancelled
-BEFORE DELETE ON Joins
+AFTER DELETE ON Joins
 FOR EACH ROW EXECUTE FUNCTION cancel_meeting();
 
 --No employees can join or leave from an already approved session
@@ -188,7 +192,7 @@ CREATE TRIGGER approved_check_join
 BEFORE INSERT OR UPDATE OR DELETE ON Joins
 FOR EACH ROW EXECUTE FUNCTION check_approved_join();
 
---Join cannot be made by someone who has resigned
+--An employee who has resigned cannot join any sessions
 CREATE OR REPLACE FUNCTION check_resignation()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -201,7 +205,7 @@ BEGIN
     IF resign_date IS NULL OR resign_date > NEW.date THEN
         RETURN NEW;
     ELSE
-        RAISE NOTICE 'Employee has already resigned';
+        RAISE NOTICE 'Not allowed to join session as employee has already resigned';
         RETURN NULL;
     END IF;
 END;
@@ -241,33 +245,27 @@ FOR EACH ROW EXECUTE FUNCTION check_approved_book();
 CREATE OR REPLACE FUNCTION check_session_participation()
 RETURNS TRIGGER AS $$
 DECLARE
-    date_current DATE;
-    number_of_sessions INTEGER;
+    corresponding_joins INTEGER;
 BEGIN
-    SELECT CURRENT_DATE INTO date_current;
-
-    SELECT COUNT(*) INTO number_of_sessions
+    SELECT COUNT(*) INTO corresponding_joins
     FROM Joins j
     WHERE j.time = NEW.time
     AND j.date = NEW.date
     AND j.room = NEW.room
     AND j.floor = NEW.floor
-    AND j.b_eid = NEW.b_eid
-    AND j.date < date_current;
+    AND j.b_eid = NEW.b_eid;
 
-    IF number_of_sessions > 0 THEN
-        RETURN NEW;
+    IF corresponding_joins > 0 THEN
+        RAISE NOTICE 'There are still employees involved in this session, please clear them from Joins first';
+        RETURN NULL;
     ELSE
-        RAISE NOTICE 'Each session must exist at least once in Join';
-        INSERT INTO Sessions (time, date, room, floor, b_eid) VALUES (NEW.time, NEW.date, NEW.room, NEW.floor, NEW.b_eid);
         RETURN NEW;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE CONSTRAINT TRIGGER session_participation_check
-AFTER INSERT OR UPDATE OR DELETE ON Sessions
-DEFERRABLE INITIALLY DEFERRED
+CREATE TRIGGER session_participation_check
+BEFORE UPDATE OR DELETE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION check_session_participation();
 
 --checks if an employee has been in contact with a sick employee in the past 7 days
@@ -302,7 +300,7 @@ BEGIN
     FROM sick_contacts(NEW.e_eid, NEW.date);
 
     IF num_of_sick_contacts > 0 THEN
-        RAISE NOTICE 'Not allowed to join meeting as employee has been in contact with a sick personel in the past 7 days';
+        RAISE NOTICE 'Not allowed to join session as employee has been in contact with a sick personel in the past 7 days';
         RETURN NULL;
     ELSE
         RETURN NEW;

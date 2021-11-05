@@ -1,16 +1,28 @@
-DROP TRIGGER IF EXISTS booker_joins ON Sessions;
+DROP TRIGGER IF EXISTS join_automatically ON Sessions;
+DROP FUNCTION IF EXISTS automatically_join();
 DROP TRIGGER IF EXISTS temp_check_join ON Joins;
+DROP FUNCTION IF EXISTS check_temp_join();
 DROP TRIGGER IF EXISTS date_time_check_join ON Joins;
+DROP FUNCTION IF EXISTS check_date_time_join();
 DROP TRIGGER IF EXISTS cap_check ON Joins;
+DROP FUNCTION IF EXISTS check_cap();
 DROP TRIGGER IF EXISTS temp_check_book ON Sessions;
+DROP FUNCTION IF EXISTS check_temp_book();
 DROP TRIGGER IF EXISTS date_time_check_book ON Sessions;
+DROP FUNCTION IF EXISTS check_date_time_book();
 DROP TRIGGER IF EXISTS meeting_cancelled ON Joins;
+DROP FUNCTION IF EXISTS cancel_meeting();
 DROP TRIGGER IF EXISTS approved_check_join ON Joins;
+DROP FUNCTION IF EXISTS check_approved_join();
 DROP TRIGGER IF EXISTS resignation_check ON Joins;
+DROP FUNCTION IF EXISTS check_resignation();
 DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
+DROP FUNCTION IF EXISTS check_approved_book();
 DROP TRIGGER IF EXISTS session_participation_check ON Sessions;
-DROP FUNCTION IF EXISTS contact_trace(IN sick_eid INT, IN sick_date DATE);
-DROP TRIGGER IF EXISTS contact_check ON Sessions;
+DROP FUNCTION IF EXISTS check_session_participation();
+DROP TRIGGER IF EXISTS contact_check ON Joins;
+DROP FUNCTION IF EXISTS check_contact();
+DROP FUNCTION IF EXISTS sick_contacts(INTEGER, DATE);
 
 --The employee booking the room immediately joins the booked meeting
 CREATE OR REPLACE FUNCTION automatically_join()

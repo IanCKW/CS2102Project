@@ -56,7 +56,7 @@ DECLARE
 BEGIN
     SELECT CURRENT_DATE INTO date_current;
 
-    IF date_current < NEW.date THEN
+    IF NEW.date < date_current THEN
         RAISE NOTICE 'Session is already over';
         RETURN NULL;
     ELSE
@@ -134,7 +134,7 @@ DECLARE
 BEGIN
     SELECT CURRENT_DATE INTO date_current;
 
-    IF date_current < NEW.date THEN
+    IF NEW.date < date_current THEN
         RAISE NOTICE 'Cannot book in the past';
         RETURN NULL;
     ELSE
@@ -150,12 +150,29 @@ FOR EACH ROW EXECUTE FUNCTION check_date_time_book();
 --When the booker is removed from a meeting, the meeting is cancelled
 CREATE OR REPLACE FUNCTION cancel_meeting()
 RETURNS TRIGGER AS $$
+DECLARE
+    is_booker INTEGER;
 BEGIN
-    DELETE FROM Joins j
-    WHERE j.b_eid = NEW.b_eid;
+    SELECT COUNT (*) INTO is_booker 
+    FROM Bookers b
+    WHERE b.eid = OLD.e_eid;
 
-    DELETE FROM Sessions s
-    WHERE s.b_eid = NEW.b_eid;
+    IF is_booker > 0 THEN
+        RAISE NOTICE 'A booker has been removed, the session booked by him will be cancelled';
+        DELETE FROM Joins j
+        WHERE j.time = OLD.time
+        AND j.date = OLD.date
+        AND j.room = OLD.room
+        AND j.floor = OLD.floor
+        AND j.b_eid = OLD.e_eid;
+
+        DELETE FROM Sessions s
+        WHERE s.time = OLD.time
+        AND s.date = OLD.date
+        AND s.room = OLD.room
+        AND s.floor = OLD.floor
+        AND s.b_eid = OLD.e_eid;
+    END IF;
 
     RETURN NEW;
 END;
@@ -256,7 +273,7 @@ BEGIN
     AND j.b_eid = NEW.b_eid;
 
     IF corresponding_joins > 0 THEN
-        RAISE NOTICE 'There are still employees involved in this session, please clear them from Joins first';
+        RAISE NOTICE 'There are still employees involved in this session, please clear them first';
         RETURN NULL;
     ELSE
         RETURN NEW;

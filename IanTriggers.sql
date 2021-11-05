@@ -198,7 +198,9 @@ CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.temp > 37.5 THEN
-        RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days';
+        RAISE NOTICE 'Close contacts are removed from meetings for the next 7 days
+        and bookings made from close contacts are deleted';
+
         DELETE FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
@@ -206,6 +208,14 @@ BEGIN
             j.date = NEW.date + INTERVAL '2 day'OR j.date = NEW.date + INTERVAL '3 day'OR
             j.date = NEW.date + INTERVAL '4 day'OR j.date = NEW.date + INTERVAL '5 day'OR
             j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day';
+        DELETE FROM Sessions s USING contact_tracing(NEW.eid, NEW.date) cc 
+        WHERE
+            s.b_eid = cc AND
+            s.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
+            s.date = NEW.date + INTERVAL '2 day'OR s.date = NEW.date + INTERVAL '3 day'OR
+            s.date = NEW.date + INTERVAL '4 day'OR s.date = NEW.date + INTERVAL '5 day'OR
+            s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day';
+            
     END IF;
 RETURN new;
 END;

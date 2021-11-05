@@ -101,7 +101,7 @@ BEGIN
         );
         hour := hour + 1;
     END LOOP;
-    RAISE NOTICE 'Meeting Left'
+    RAISE NOTICE 'Meeting Left';
 END;
 $$ LANGUAGE plpgsql;
 

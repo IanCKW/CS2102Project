@@ -36,6 +36,7 @@ CREATE OR REPLACE FUNCTION add_employee(ename1 TEXT, resigned_date1 DATE,did1 IN
 RETURNS VOID AS $$
 BEGIN
 INSERT INTO Employees (ename,NULL,resigned_date,did,contact,home_contact,office_contact) VALUES (ename1,email1,resigned_date1,did1,contact1,home_contact1,office_contact1);
+RAISE NOTICE 'Employee added';
 END;
 $$ LANGUAGE plpgsql;
 

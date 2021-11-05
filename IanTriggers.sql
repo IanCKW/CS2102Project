@@ -44,7 +44,7 @@ CREATE OR REPLACE FUNCTION updates_resigned_check()
 RETURNS TRIGGER AS $$
 BEGIN
     IF check_resign(NEW.m_eid) < NEW.date THEN    
-        RAISE NOTICE 'This employee has resigned';
+        RAISE NOTICE 'Updater has resigned';
         RETURN NULL;
     ELSE
         RETURN NEW;

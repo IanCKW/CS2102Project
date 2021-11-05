@@ -50,3 +50,45 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION leave_approved_meetings()
+RETURNS TRIGGER AS $$
+DECLARE
+    number_of_sick INTEGER;
+BEGIN
+
+    SELECT COUNT (*) INTO number_of_sick
+    FROM (Health_Declarations h 
+        JOIN contact_tracing(NEW.e_eid, NEW.date) c0 
+            ON h.eid = c0.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '1 day') c1 
+            ON h.eid = c1.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '2 day') c2 
+            ON h.eid = c2.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '3 day') c3 
+            ON h.eid = c3.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '4 day') c4 
+            ON h.eid = c4.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '5 day') c5 
+            ON h.eid = c5.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '6 day') c6 
+            ON h.eid = c6.e_eid
+        JOIN contact_tracing(NEW.e_eid, NEW.date - INTERVAL '7 day') c7 
+            ON h.eid = c7.e_eid
+    ) hc
+    WHERE hc.temp > 37.5;
+    
+    IF number_of_sick > 0 or NEW.date > (SELECT resigned_date FROM Employees E where E.eid = NEW.e_eid) THEN
+        RAISE NOTICE 'Employee will be removed from Joins';
+        RETURN NEW;
+
+    ELSE
+        RAISE NOTICE 'Cannot leave approved session';
+        RETURN NULL;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER delete_approved_joins
+BEFORE DELETE ON Joins
+FOR EACH ROW EXECUTE FUNCTION leave_approved_meetings();

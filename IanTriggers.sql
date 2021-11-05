@@ -183,7 +183,7 @@ CREATE OR REPLACE FUNCTION contact_tracing(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
     SELECT j2.e_eid as e_eid
-    FROM Sessions s, Joins j1, Joins j2
+    FROM Approves s, Joins j1, Joins j2
     -- get participants of meetings
     WHERE (s.room, s.floor, s.date, s.time, s.b_eid) = (j1.room, j1.floor, j1.date, j1.time, s.b_eid)
     -- get sessions that eid was in in the past 3 days
@@ -215,7 +215,7 @@ BEGIN
             s.date = NEW.date + INTERVAL '2 day'OR s.date = NEW.date + INTERVAL '3 day'OR
             s.date = NEW.date + INTERVAL '4 day'OR s.date = NEW.date + INTERVAL '5 day'OR
             s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day';
-            
+
     END IF;
 RETURN new;
 END;

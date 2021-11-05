@@ -8,7 +8,7 @@ BEGIN
     SELECT CURRENT_DATE into datenow;
     SELECT COUNT (*) INTO count
     FROM Updates
-    WHERE ((Updates.room, Updates.floor) = (NEW.room, NEW.floor)) and (Updates.date < datenow);
+    WHERE ((Updates.room, Updates.floor) = (NEW.room, NEW.floor)) and (Updates.date <= datenow);
 	
 	IF count=0 THEN
 		RAISE NOTICE 'Please update room capacity as well, entry will be deleted';

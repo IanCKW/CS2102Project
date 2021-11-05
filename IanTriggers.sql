@@ -175,6 +175,82 @@ BEFORE INSERT OR UPDATE ON Updates
 FOR EACH ROW 
 EXECUTE FUNCTION check_manager_from_same_dep_as_mr();
 
+
+--------------------------------------------------------------------------------------------------------------------
+
+-- TRIGGER FUNCTION AND TRIGGER REMOVES FUTURE SESSIONS WHERE THE NUM OF PARTICIPANTS > MOST RECENT CAPACITY
+-- AND DELETES FUTURE UPDATES
+
+CREATE OR REPLACE FUNCTION check_update()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    -- Find meeting room of NEW
+    -- Find all sessions booked with the meeting room after NEW.date
+    -- Find num of participants of each session. If > capacity, delete session
+    WITH SessionsToBeDeleted AS
+        (SELECT rel_sess.b_eid, rel_sess.time, rel_sess.date, rel_sess.room, rel_sess.floor
+        FROM
+            (SELECT s.b_eid AS b_eid, s.time AS time, s.date AS date, s.room AS room, s.floor AS floor
+            FROM Sessions s
+            WHERE s.room = NEW.room AND s.floor = NEW.floor AND s.date >= NEW.date) AS rel_sess,
+
+            Joins j
+        WHERE j.b_eid = rel_sess.b_eid AND j.time = rel_sess.time AND 
+        j.date = rel_sess.date AND j.room = rel_sess.room AND j.floor = rel_sess.floor
+        GROUP BY rel_sess.b_eid, rel_sess.time, rel_sess.date, rel_sess.room, rel_sess.floor
+        HAVING COUNT(*) > NEW.new_cap)
+    DELETE FROM Sessions s1 USING SessionsToBeDeleted
+    WHERE s1.b_eid = SessionsToBeDeleted.b_eid AND 
+        s1.time = SessionsToBeDeleted.time AND 
+        s1.date = SessionsToBeDeleted.date AND 
+        s1.room = SessionsToBeDeleted.room AND 
+        s1.floor = SessionsToBeDeleted.floor;
+
+    -- Future updates of the same meeting room are deleted
+    DELETE FROM UPDATES u
+    WHERE u.room = NEW.room AND u.floor = NEW.floor AND u.date >= NEW.date;
+
+RETURN NEW;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER handle_update
+AFTER INSERT OR UPDATE ON Updates
+FOR EACH ROW 
+EXECUTE FUNCTION check_update();
+
+--------------------------------------------------------------------------------------------------------------------
+
+-- CHECKS IF YOU DELETE FROM UPDATES THAT THERE EXISTS AN UPDATE FOR THE MEETING ROOM THAT IS BEFORE OR DURING
+-- CURRENT DATE
+
+CREATE OR REPLACE FUNCTION check_delete_update()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Updates u
+    WHERE u.room = OLD.room AND u.floor = OLD.floor AND u.date < CURRENT_DATE AND u.date <> OLD.date;
+
+    IF count > 0 THEN
+        RETURN OLD;
+    ELSE
+        RAISE NOTICE 'You are deleting an Update from a meeting room that has no Update entry earlier than
+        todays date.';
+        RETURN NULL;
+    END IF;
+
+RETURN NEW;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER handle_update_delete
+BEFORE DELETE ON Updates
+FOR EACH ROW 
+EXECUTE FUNCTION check_delete_update();
+
 --------------------------------------------------------------------------------------------------------------------
 
 
@@ -184,7 +260,7 @@ RETURNS SETOF INT AS $$
 
     SELECT j2.e_eid as e_eid
     FROM Approves s, Joins j1, Joins j2
-    -- get participants of meetings
+    -- get participants of approved meetings
     WHERE (s.room, s.floor, s.date, s.time, s.b_eid) = (j1.room, j1.floor, j1.date, j1.time, s.b_eid)
     -- get sessions that eid was in in the past 3 days
     AND j1.e_eid = sick_eid AND (j1.date = sick_date OR j1.date = sick_date - INTERVAL '1 day' OR j1.date = sick_date - INTERVAL '2 day' OR j1.date = sick_date - INTERVAL '3 day')
@@ -265,7 +341,7 @@ $$ LANGUAGE plpgsql;
 
 -- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
-RETURNS TABLE(id INT, c INT) AS $$
+RETURNS TABLE(id INT, c DOUBLE PRECISION) AS $$
 
     SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
     FROM Employees e 

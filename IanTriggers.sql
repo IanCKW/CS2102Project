@@ -44,7 +44,7 @@ CREATE OR REPLACE FUNCTION updates_resigned_check()
 RETURNS TRIGGER AS $$
 BEGIN
     IF check_resign(NEW.m_eid) < NEW.date THEN    
-        RAISE NOTICE 'This employee has resigned';
+        RAISE NOTICE 'Updater has resigned';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -341,7 +341,11 @@ $$ LANGUAGE plpgsql;
 
 -- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
+<<<<<<< HEAD
 RETURNS TABLE(id INT, c DOUBLE PRECISION) AS $$
+=======
+RETURNS TABLE(id INT, c FLOAT) AS $$
+>>>>>>> 4c624762237c67041c0cb205c99ddfa2526e7354
 
     SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
     FROM Employees e 

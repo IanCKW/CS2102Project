@@ -3,6 +3,8 @@ DROP TRIGGER IF EXISTS validJunior ON Juniors;
 DROP TRIGGER IF EXISTS validBooker ON Bookers;
 DROP TRIGGER IF EXISTS validSenior ON Seniors;
 DROP TRIGGER IF EXISTS validManager ON Managers;
+DROP TRIGGER IF EXISTS bookerNotResigned ON Sessions;
+DROP TRIGGER IF EXISTS approverNotResigned ON Approves;
 
 -- Check that new junior is not a booker
 CREATE OR REPLACE FUNCTION juniorNotBooker()
@@ -15,6 +17,7 @@ BEGIN
     WHERE NEW.eid = Bookers.eid; 
 
     IF count > 0 THEN
+        RAISE NOTICE 'Employee is a booker';
         RETURN NULL;
     ELSE 
         RETURN NEW;
@@ -37,6 +40,7 @@ BEGIN
     WHERE NEW.eid = Juniors.eid;
 
     IF count > 0 THEN
+        RAISE NOTICE 'Employee is a junior';
         RETURN NULL;
     ELSE 
         RETURN NEW;
@@ -59,6 +63,7 @@ BEGIN
     WHERE NEW.eid = Managers.eid;
 
     IF count > 0 THEN
+        RAISE NOTICE 'Employee is a manager';
         RETURN NULL;
     ELSE 
         RETURN NEW;
@@ -81,6 +86,7 @@ BEGIN
     WHERE NEW.eid = Seniors.eid;
     
     IF count > 0 THEN
+        RAISE NOTICE 'Employee is a senior';
         RETURN NULL;
     ELSE 
         RETURN NEW;
@@ -104,3 +110,45 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER setEmployeeEmail
 BEFORE INSERT OR UPDATE ON Employees
 FOR EACH ROW EXECUTE FUNCTION autogenerateEmployeeEmail();
+
+-- Prevent resigned employees from booking
+CREATE OR REPLACE FUNCTION checkBookerResignationStatus()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.b_eid IN (
+        SELECT eid FROM Employees
+        WHERE resigned_date IS NULL
+        OR resigned_date > CURRENT_DATE
+    ) THEN 
+        RETURN NEW;
+    ELSE 
+        RAISE NOTICE 'Booker has resigned';
+        RETURN NULL;
+    END IF;   
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER bookerNotResigned
+BEFORE INSERT OR UPDATE ON Sessions
+FOR EACH ROW EXECUTE FUNCTION checkBookerResignationStatus();
+
+-- Prevent resigned employees from approves
+CREATE OR REPLACE FUNCTION checkApproverResignationStatus()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.m_eid IN (
+        SELECT eid FROM Employees
+        WHERE resigned_date IS NULL
+        OR resigned_date > CURRENT_DATE
+    ) THEN 
+        RETURN NEW;
+    ELSE 
+        RAISE NOTICE 'Approver has resigned';
+        RETURN NULL;
+    END IF;   
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER approverNotResigned
+BEFORE INSERT OR UPDATE ON Approves
+FOR EACH ROW EXECUTE FUNCTION checkApproverResignationStatus();

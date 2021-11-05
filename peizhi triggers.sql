@@ -46,7 +46,8 @@ BEGIN
 	RETURN NEW;
 	
     ELSE
-        RETURN NULL; 
+        RETURN NULL;
+        RAISE NOTICE 'Unable to delete department'; 
     END IF;
 END;
 $$ LANGUAGE plpgsql;

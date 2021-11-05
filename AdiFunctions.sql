@@ -35,6 +35,8 @@ BEGIN
         INSERT INTO Sessions VALUES (hour, date, room, floor, eid);
         hour := hour + 1;
     END LOOP;
+    RAISE NOTICE 'Room Booked';
+    SELECT * FROM join_meeting(floor, room, date, start_hour, end_hour, eid, eid);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -62,6 +64,7 @@ BEGIN
         );
         hour := hour + 1;
     END LOOP;
+    RAISE NOTICE 'Room Unbooked';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -76,6 +79,7 @@ BEGIN
         INSERT INTO Joins VALUES (hour, date, room, floor, b_eid, eid);
         hour := hour + 1;
     END LOOP;
+    RAISE NOTICE 'Meeting Joined';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -97,6 +101,7 @@ BEGIN
         );
         hour := hour + 1;
     END LOOP;
+    RAISE NOTICE 'Meeting Left';
 END;
 $$ LANGUAGE plpgsql;
 
@@ -110,5 +115,6 @@ BEGIN
     WHILE hour < end_hour LOOP
         INSERT INTO Approves VALUES (hour, date, room, floor, b_eid, m_eid);
     END LOOP;
+    RAISE NOTICE 'Meeting Approved';
 END;
 $$ LANGUAGE plpgsql;

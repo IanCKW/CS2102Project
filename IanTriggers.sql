@@ -265,7 +265,7 @@ $$ LANGUAGE plpgsql;
 
 -- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
-RETURNS TABLE(id INT, c INT) AS $$
+RETURNS TABLE(id INT, c FLOAT) AS $$
 
     SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
     FROM Employees e 

@@ -4,7 +4,7 @@ DROP FUNCTION IF EXISTS
     view_manager_report(DATE, INTEGER);
 
 CREATE OR REPLACE FUNCTION view_booking_report(IN start_date DATE, IN input_eid INT)
-RETURNS TABLE(floor_no INT, room_no INT, meeting_date DATE, meeting_time INT, is_approved INT) AS $$
+RETURNS TABLE(floor_no INT, room_no INT, meeting_date DATE, meeting_time INT, is_approved BIGINT) AS $$
     SELECT s.floor AS floor_no, s.room AS room_no, s.date AS meeting_date, s.time AS meeting_time, 
         (SELECT COUNT(*)
         FROM Approves a

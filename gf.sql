@@ -1,8 +1,7 @@
-DROP FUNCTION IF EXISTS
-    check_approval_status(INTEGER, DATE, INTEGER, INTEGER, INTEGER),
-    view_booking_report(DATE, INTEGER),
-    view_future_meeting(DATE, INTEGER),
-    view_manager_report(DATE, INTEGER);
+DROP FUNCTION IF EXISTS check_approval_status(INTEGER, DATE, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS view_booking_report(DATE, INTEGER);
+DROP FUNCTION IF EXISTS view_future_meeting(DATE, INTEGER);
+DROP FUNCTION IF EXISTS view_manager_report(DATE, INTEGER);
 
 --find all meeting-rooms + their approval-status booked by this employee from the given date onwards
 CREATE OR REPLACE FUNCTION check_approval_status(IN meeting_time INT, IN meeting_date DATE, IN meeting_room INT, IN meeting_floor INT, IN meeting_bid INT)

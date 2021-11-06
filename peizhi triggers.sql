@@ -37,7 +37,7 @@ count2 NUMERIC;
 BEGIN
     SELECT COUNT (*) INTO count1
     FROM Employees 
-    WHERE Employees.did = OLD.did;
+    WHERE Employees.did = OLD.did and check_resign(Employees.eid) > CURRENT_DATE ;
 
     SELECT COUNT (*) INTO count2
     FROM Meeting_Rooms m
@@ -46,7 +46,11 @@ BEGIN
     count = count1 + count2;
 
     IF count = 0 THEN
-	RAISE NOTICE 'Department will be deleted';
+	    RAISE NOTICE 'Department will be deleted and all resigned employees will be
+        shifted to the resigned department';
+        UPDATE Employees e
+        SET did = 0
+        WHERE e.did = OLD.did AND check_resign(e.eid) <= CURRENT_DATE;
 	RETURN OLD;
 	
     ELSE

@@ -20,8 +20,8 @@ DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
 DROP FUNCTION IF EXISTS check_approved_book();
 DROP TRIGGER IF EXISTS contact_check ON Joins;
 DROP FUNCTION IF EXISTS check_contact();
-DROP FUNCTION IF EXISTS sick_contacts(INTEGER, DATE);
 DROP TRIGGER IF EXISTS contact_check_book ON Sessions;
+DROP FUNCTION IF EXISTS check_contact_book();
 
 --The employee booking the room immediately joins the booked meeting
 CREATE OR REPLACE FUNCTION automatically_join()
@@ -263,8 +263,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER approved_check_book
 BEFORE INSERT OR UPDATE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION check_approved_book();
-
-
 
 CREATE OR REPLACE FUNCTION check_contact()
 RETURNS TRIGGER AS $$

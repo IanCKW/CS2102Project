@@ -18,8 +18,6 @@ DROP TRIGGER IF EXISTS resignation_check ON Joins;
 DROP FUNCTION IF EXISTS check_resignation();
 DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
 DROP FUNCTION IF EXISTS check_approved_book();
-DROP TRIGGER IF EXISTS session_participation_check ON Sessions;
-DROP FUNCTION IF EXISTS check_session_participation();
 DROP TRIGGER IF EXISTS contact_check ON Joins;
 DROP FUNCTION IF EXISTS check_contact();
 DROP FUNCTION IF EXISTS sick_contacts(INTEGER, DATE);
@@ -85,16 +83,18 @@ FOR EACH ROW EXECUTE FUNCTION check_date_time_join();
 CREATE OR REPLACE FUNCTION check_cap()
 RETURNS TRIGGER AS $$
 DECLARE
-    cap INTEGER;
-    current INTEGER;
+    latest_capacity INTEGER;
+    num_of_attendee INTEGER;
 BEGIN
-    SELECT u.new_cap INTO cap
+    SELECT u.new_cap INTO latest_capacity
     FROM Updates u
     WHERE u.room = NEW.room
     AND u.floor = NEW.floor
-    AND u.date <= NEW.date;
+    AND u.date <= NEW.date
+    ORDER BY u.date DESC
+    LIMIT 1;
 
-    SELECT COUNT(*) INTO current
+    SELECT COUNT(*) INTO num_of_attendee
     FROM Joins j
     WHERE j.time = NEW.time
     AND j.date = NEW.date
@@ -102,8 +102,8 @@ BEGIN
     AND j.floor = NEW.floor
     AND j.b_eid = NEW.b_eid;
 
-    IF current >= cap THEN
-        RAISE NOTICE 'Unable to join as session is full';
+    IF num_of_attendee >= latest_capacity THEN
+        RAISE NOTICE 'Unable to join as session is already full';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -269,33 +269,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER approved_check_book
 BEFORE INSERT OR UPDATE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION check_approved_book();
-
---Each session must exist at least once in Join
-CREATE OR REPLACE FUNCTION check_session_participation()
-RETURNS TRIGGER AS $$
-DECLARE
-    corresponding_joins INTEGER;
-BEGIN
-    SELECT COUNT(*) INTO corresponding_joins
-    FROM Joins j
-    WHERE j.time = NEW.time
-    AND j.date = NEW.date
-    AND j.room = NEW.room
-    AND j.floor = NEW.floor
-    AND j.b_eid = NEW.b_eid;
-
-    IF corresponding_joins > 0 THEN
-        RAISE NOTICE 'There are still employees involved in this session, please clear them first';
-        RETURN NULL;
-    ELSE
-        RETURN NEW;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER session_participation_check
-BEFORE UPDATE OR DELETE ON Sessions
-FOR EACH ROW EXECUTE FUNCTION check_session_participation();
 
 --checks if an employee has been in contact with a sick employee in the past 7 days
 CREATE OR REPLACE FUNCTION sick_contacts(IN checked_eid INT, IN checked_date DATE)

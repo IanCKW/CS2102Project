@@ -34,23 +34,28 @@ count2 NUMERIC;
 BEGIN
     SELECT COUNT (*) INTO count1
     FROM Employees 
-    WHERE Employees.did = NEW.did;
+    WHERE Employees.did = OLD.did;
 
     SELECT COUNT (*) INTO count2
     FROM Meeting_Rooms m
-    WHERE m.did = NEW.did;
+    WHERE m.did = OLD.did;
 
     count = count1 + count2;
 
     IF count = 0 THEN
-	RETURN NEW;
+	RAISE NOTICE 'Department will be deleted';
+	RETURN OLD;
 	
     ELSE
-        RETURN NULL;
-        RAISE NOTICE 'Unable to delete department'; 
+	RAISE NOTICE 'Department cannot be deleted due to leftover resources';
+        RETURN NULL; 
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER want_to_delete_dept
+BEFORE DELETE ON Departments
+FOR EACH ROW EXECUTE FUNCTION check_dept_relations();
 
 CREATE OR REPLACE FUNCTION leave_approved_meetings()
 RETURNS TRIGGER AS $$

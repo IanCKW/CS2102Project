@@ -48,7 +48,6 @@ CREATE TABLE Meeting_Rooms (
     did     INTEGER NOT NULL,
     PRIMARY KEY (room, floor),
     FOREIGN KEY (did) REFERENCES Departments (did) ON UPDATE CASCADE
-    -- ON DELETE NO ACTION since departments with meeting rooms cannot be deleted
 );
 
 CREATE TABLE Updates(

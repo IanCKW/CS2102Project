@@ -166,17 +166,10 @@ DECLARE
     is_booker INTEGER;
 BEGIN
     SELECT COUNT (*) INTO is_booker 
-    FROM Bookers b
-    WHERE b.eid = OLD.e_eid;
+    WHERE OLD.b_eid = OLD.e_eid;
 
     IF is_booker > 0 THEN
         RAISE NOTICE 'A booker has been removed, the session booked by him will be cancelled';
-        DELETE FROM Joins j
-        WHERE j.time = OLD.time
-        AND j.date = OLD.date
-        AND j.room = OLD.room
-        AND j.floor = OLD.floor
-        AND j.b_eid = OLD.e_eid;
 
         DELETE FROM Sessions s
         WHERE s.time = OLD.time
@@ -218,7 +211,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER approved_check_join
-BEFORE INSERT OR UPDATE OR DELETE ON Joins
+BEFORE INSERT OR UPDATE ON Joins
 FOR EACH ROW EXECUTE FUNCTION check_approved_join();
 
 --An employee who has resigned cannot join any sessions

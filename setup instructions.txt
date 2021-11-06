@@ -1,0 +1,44 @@
+psql --username=postgres -d cs2102_project_0 -f "C:\Users\Ian\Documents\CS2102\Project\CS2102Project\schema.sql"
+psql -U postgres
+
+\c cs2102_project_0
+
+CREATE OR REPLACE FUNCTION check_approves()
+RETURNS TRIGGER AS $$
+DECLARE
+    m_department_id INTEGER; -- manager
+    s_department_id INTEGER; -- session
+
+BEGIN
+    
+    select COALESCE(e.did,-1) into m_department_id 
+    from Employees e, Managers m
+    where e.eid = m.eid AND NEW.eid = m.eid;
+
+    select COALESCE(s.did, -1) into s_department_id
+    from Sessions s
+    where s.time = NEW.time AND s.date = NEW.date AND  s.room = NEW.room AND s.floor = NEW.floor;
+
+    if m_department_id < 0 OR s_department_id < 0 or m_department_id <> s_department_id then
+        return NULL;
+    else
+        return NEW.eid;
+    end if;
+
+RETURN NEW;
+END;
+$$LANGUAGE plpgsql;
+
+CREATE TRIGGER approves_check
+BEFORE INSERT OR UPDATE ON Approves
+FOR EACH ROW 
+EXECUTE FUNCTION check_approves();
+
+
+
+Fixed Updates to have PRIMARY KEY(date, room, floor),
+
+Changed CHECK from 0 - 24 to 0 to 2400
+
+modified data by deleting one group of Joins because the session didnt exist for it.
+

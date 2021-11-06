@@ -1,3 +1,4 @@
+insert into departments (did, dname) values (0, 'Resignation Department');
 insert into departments (did, dname) values (1, 'Research and Development');
 insert into departments (did, dname) values (2, 'Finance & Accounting');
 insert into departments (did, dname) values (3, 'Human Resources');
@@ -93,3 +94,37 @@ insert into Joins (time, date, room, floor, b_eid, e_eid) values (00, '2021/11/0
 
 
 insert into Health_Declarations (date, temp, eid) values ('2021/11/06', 35, 1);
+
+
+---- TESTING
+select * from non_compliance('2021/11/01','2021/11/10' );
+
+select * from contact_tracing(1, '2021/11/06');
+
+SELECT * FROM view_booking_report('2021/10/01', 2);
+
+select * from view_future_meeting('2021/10/01', 9);
+
+select * from view_manager_report('2021/10/04', 2);
+
+insert into Updates(date, new_cap,room,floor,m_eid) values  ('2021-11-06', 1, 1, 1, 1);
+
+
+--- new data after functions and triggres are added
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/01', 1,1,1);
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/05', 1,1,1);
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/07', 2,1,1);
+
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/05', 1,2,2);
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/08', 1,2,2);
+insert into Sessions (time, date, room, floor, b_eid) values (00, '2022/11/09', 1,2,2);
+
+insert into Approves (time, date, room, floor, b_eid, m_eid) values (00, '2022/11/01', 1,1,1,1);
+insert into Approves (time, date, room, floor, b_eid, m_eid) values (00, '2022/11/05', 1,1,1,1);
+insert into Approves (time, date, room, floor, b_eid, m_eid) values (00, '2022/11/07', 2,1,1,1);
+
+insert into Approves (time, date, room, floor, b_eid, m_eid) values (00, '2022/11/05', 1,2,2,2);
+insert into Approves (time, date, room, floor, b_eid, m_eid) values (00, '2022/11/08', 1,2,2,2);
+
+--delete from joins where date = '2021-11-01' and room = 2 and floor = 1 and b_eid = 1 and e_eid = 1;
+-- delete from sessions where date = '2021-11-07' and room = 2 and floor = 1 and b_eid = 1;

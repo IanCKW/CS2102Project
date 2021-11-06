@@ -263,28 +263,7 @@ CREATE TRIGGER approved_check_book
 BEFORE INSERT OR UPDATE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION check_approved_book();
 
---checks if an employee has been in contact with a sick employee in the past 7 days
-CREATE OR REPLACE FUNCTION sick_contacts(IN checked_eid INT, IN checked_date DATE)
-RETURNS TABLE(sick_contact_id INT) AS $$
-    SELECT j2.e_eid AS sick_contact_id
-    FROM Joins j1, (SELECT j.time, j.date, j.room, j.floor, j.b_eid, j.e_eid, h.temp
-        FROM (Joins j JOIN Health_Declarations h ON (j.e_eid = h.eid AND j.date = h.date))) j2
-    WHERE j1.e_eid = checked_eid --find all sessions joined by checked employee
-    AND (j1.date = checked_date --find all sessions joined by checked employee in the past 7 days
-        OR j1.date = checked_date - INTERVAL '1 day' 
-        OR j1.date = checked_date - INTERVAL '2 day' 
-        OR j1.date = checked_date - INTERVAL '3 day'
-        OR j1.date = checked_date - INTERVAL '4 day'
-        OR j1.date = checked_date - INTERVAL '5 day'
-        OR j1.date = checked_date - INTERVAL '6 day'
-        OR j1.date = checked_date - INTERVAL '7 day')
-    AND j2.time = j1.time --find all other employees who joined the same sessions as the checked employee
-    AND j2.date = j1.date
-    AND j2.room = j1.room
-    AND j2.floor = j1.floor
-    AND j2.b_eid = j1.b_eid
-    AND j2.temp > 37.5; --find all sick employees who joined the same sessions as the checked employee
-$$ LANGUAGE sql;
+
 
 CREATE OR REPLACE FUNCTION check_contact()
 RETURNS TRIGGER AS $$
@@ -292,7 +271,26 @@ DECLARE
     num_of_sick_contacts INTEGER;
 BEGIN
     SELECT COUNT (*) INTO num_of_sick_contacts
-    FROM sick_contacts(NEW.e_eid, NEW.date);
+    FROM Health_Declarations h,
+        contact_tracing(NEW.e_eid, NEW.date) c0,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+    WHERE h.temp > 37.5 AND
+    (
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE )) OR
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE )) OR
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE )) OR
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE )) OR
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE )) OR
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE )) OR
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE )) OR
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
+    );
 
     IF num_of_sick_contacts > 0 THEN
         RAISE NOTICE 'Not allowed to join session as employee has been in contact with a sick personel in the past 7 days';

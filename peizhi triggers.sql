@@ -87,26 +87,27 @@ BEGIN
     AND s.floor = NEW.floor
     AND s.b_eid = NEW.b_eid;
 
-    SELECT COUNT (*) INTO number_of_sick
-    FROM (Health_Declarations h 
-        JOIN contact_tracing(NEW.e_eid, NEW.date) c0 
-            ON h.eid = c0
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1 
-            ON h.eid = c1
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2 
-            ON h.eid = c2
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3 
-            ON h.eid = c3
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4 
-            ON h.eid = c4
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5 
-            ON h.eid = c5
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6 
-            ON h.eid = c6
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7 
-            ON h.eid = c7
-    ) hc
-    WHERE hc.temp > 37.5;
+    SELECT COUNT (*) INTO num_of_sick
+    FROM Health_Declarations h,
+        contact_tracing(NEW.e_eid, NEW.date) c0,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+    WHERE h.temp > 37.5 AND
+    (
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE )) OR
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE )) OR
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE )) OR
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE )) OR
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE )) OR
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE )) OR
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE )) OR
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
+    );
     
     IF number_of_sick > 0 or NEW.date > (SELECT resigned_date FROM Employees E where E.eid = NEW.e_eid) 
     or join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 

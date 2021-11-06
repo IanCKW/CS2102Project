@@ -222,7 +222,7 @@ BEGIN
 
     -- Future updates of the same meeting room are deleted
     DELETE FROM UPDATES u
-    WHERE u.room = NEW.room AND u.floor = NEW.floor AND u.date >= NEW.date;
+    WHERE u.room = NEW.room AND u.floor = NEW.floor AND u.date > NEW.date;
 
 RETURN NEW;
 END;
@@ -271,18 +271,20 @@ EXECUTE FUNCTION check_delete_update();
 CREATE OR REPLACE FUNCTION contact_tracing(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
-    SELECT j2.e_eid as e_eid
+    (SELECT j2.e_eid as e_eid
     FROM Approves s, Joins j1, Joins j2
     -- get participants of approved meetings
     WHERE (s.room, s.floor, s.date, s.time, s.b_eid) = (j1.room, j1.floor, j1.date, j1.time, s.b_eid)
     -- get sessions that eid was in in the past 3 days
     AND j1.e_eid = sick_eid AND (j1.date = sick_date OR j1.date = sick_date - INTERVAL '1 day' OR j1.date = sick_date - INTERVAL '2 day' OR j1.date = sick_date - INTERVAL '3 day')
     -- get close contacts;
-    AND (j1.room, j1.floor, j1.date, j1.time, j1.b_eid) = (j2.room, j2.floor, j2.date, j2.time, j2.b_eid)
+    AND (j1.room, j1.floor, j1.date, j1.time, j1.b_eid) = (j2.room, j2.floor, j2.date, j2.time, j2.b_eid))
+    UNION
+    (SELECT e.eid FROM Employees e WHERE e.eid = sick_eid );
     
 $$ LANGUAGE sql ;
 
--- TRIGGER FUNC AND TRIGGER TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS
+-- TRIGGER FUNC AND TRIGGER TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS and DELET SESSIONS BOOKED BY CLOSE CONTACTS
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -293,17 +295,17 @@ BEGIN
         DELETE FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
-            j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
+            (j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
             j.date = NEW.date + INTERVAL '2 day'OR j.date = NEW.date + INTERVAL '3 day'OR
             j.date = NEW.date + INTERVAL '4 day'OR j.date = NEW.date + INTERVAL '5 day'OR
-            j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day';
+            j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day');
         DELETE FROM Sessions s USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             s.b_eid = cc AND
-            s.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
+            (s.date = NEW.date OR s.date = NEW.date + INTERVAL '1 day'OR
             s.date = NEW.date + INTERVAL '2 day'OR s.date = NEW.date + INTERVAL '3 day'OR
             s.date = NEW.date + INTERVAL '4 day'OR s.date = NEW.date + INTERVAL '5 day'OR
-            s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day';
+            s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day');
 
     END IF;
 RETURN new;
@@ -337,40 +339,6 @@ CREATE TRIGGER session_rem
 BEFORE INSERT OR UPDATE ON Health_Declarations
 FOR EACH ROW 
 EXECUTE FUNCTION rem_sessions();
-
---------------------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------------
--------------------------------------------APPLICATION FUNCTIONS----------------------------------------
---------------------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------------
-
----DECLARE HEALTH ---
-CREATE OR REPLACE FUNCTION declare_health(eid1 INT, date1 DATE, temp1 FLOAT)
-RETURNS VOID AS $$
-BEGIN
-INSERT INTO Health_Declarations (eid,date,temp) VALUES (eid1,date1,temp1);
-END;
-$$ LANGUAGE plpgsql;
-
--- NON_COMPLIANCE ROUTINE --
-CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
-RETURNS TABLE(id INT, c FLOAT) AS $$
-
-    SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
-    FROM Employees e 
-    LEFT OUTER JOIN  
-    (SELECT * FROM Health_Declarations h1 WHERE h1.date >= START_DATE AND h1.date <= end_date)
-    AS h ON e.eid = h.eid
-    GROUP BY e.eid;
-
-$$ LANGUAGE sql ;
-
-
-
-
-------
--- For 
-
 
 
 

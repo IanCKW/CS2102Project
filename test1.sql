@@ -1,15 +1,16 @@
--- This file is intended to test all functions and triggers
+-- This file is intended to test all functions and triggers except resignation and contact tracing
 
 -- add department
-SELECT * FROM add_department('Board');
-SELECT * FROM add_department('Human Resources');
-SELECT * FROM add_department('Marketing');
-SELECT * FROM add_department('Sales');
-SELECT * FROM add_department('Information Technology');
-SELECT * FROM add_department('Research and Development');
-SELECT * FROM add_department('Security');
-SELECT * FROM add_department('Liaison');
-SELECT * FROM add_department('Reception');
+SELECT * FROM add_department(0, 'Resigned')
+SELECT * FROM add_department(1, 'Board');
+SELECT * FROM add_department(2, 'Human Resources');
+SELECT * FROM add_department(3, 'Marketing');
+SELECT * FROM add_department(4, 'Sales');
+SELECT * FROM add_department(5, 'Information Technology');
+SELECT * FROM add_department(6, 'Research and Development');
+SELECT * FROM add_department(7, 'Security');
+SELECT * FROM add_department(8, 'Liaison');
+SELECT * FROM add_department(9, 'Reception');
 -- All should return INSERT 0 1 and 'Department added'.
 
 -- add employee

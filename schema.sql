@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS Employees, Juniors, Seniors, Bookers, Managers, Sessions,
 Departments, Meeting_Rooms, Updates, Approves, Joins, Health_Declarations, Check_Fever CASCADE;
 
 CREATE TABLE Departments (
-    did PRIMARY KEY,
+    did INTEGER PRIMARY KEY,
     dname TEXT
 );
 

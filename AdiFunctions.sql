@@ -36,7 +36,6 @@ BEGIN
         hour := hour + 1;
     END LOOP;
     RAISE NOTICE 'Room Booked';
-    SELECT * FROM join_meeting(floor, room, date, start_hour, end_hour, eid, eid);
 END;
 $$ LANGUAGE plpgsql;
 

@@ -8,16 +8,17 @@ README
 - All rooms have capacity of 10 in updates. The first meeting for each dept will only have 5 people, in case you wanna update the capacity to 5. . 
 - To test if trigger is working, the last join statement (insert into Approves (time, date, room, floor, b_eid, m_eid) values (12, '2021-11-19', 9, 11, 100, 45);) will have 11 pax. Please take note when testing. 
 
-insert into departments (dname) values ('Research and Development');
-insert into departments (dname) values ('Finance & Accounting');
-insert into departments (dname) values ('Human Resources');
-insert into departments (dname) values ('Information Technology');
-insert into departments (dname) values ('Operations');
-insert into departments (dname) values ('Production & Manufacturing');
-insert into departments (dname) values ('Security');
-insert into departments (dname) values ('Sales & Marketing');
-insert into departments (dname) values ('Customer Service');
-insert into departments (dname) values ('Legal');
+insert into departments (did, dname) values (0, 'Previously Employed');
+insert into departments (did, dname) values (1, 'Research and Development');
+insert into departments (did, dname) values (2, 'Finance & Accounting');
+insert into departments (did, dname) values (3, 'Human Resources');
+insert into departments (did, dname) values (4, 'Information Technology');
+insert into departments (did, dname) values (5, 'Operations');
+insert into departments (did, dname) values (6, 'Production & Manufacturing');
+insert into departments (did, dname) values (7, 'Security');
+insert into departments (did, dname) values (8, 'Sales & Marketing');
+insert into departments (did, dname) values (9, 'Customer Service');
+insert into departments (did, dname) values (10, 'Legal');
 
 insert into employees (ename, email, resigned_date, did, contact, home_contact, office_contact) values ('Sherlock Hallibone',null, null, 10, 95508558,67997854,61022049);
 insert into employees (ename, email, resigned_date, did, contact, home_contact, office_contact) values ('Lexine Rollingson',null, null, 3, 83599237,67399614,60364666);

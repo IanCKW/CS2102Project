@@ -64,6 +64,10 @@ CREATE TRIGGER want_to_delete_dept
 BEFORE DELETE ON Departments
 FOR EACH ROW EXECUTE FUNCTION check_dept_relations();
 
+
+
+
+
 CREATE OR REPLACE FUNCTION leave_approved_meetings()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -73,21 +77,23 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO join_approved
     FROM Approves a
-    WHERE a.time = NEW.time
-    AND a.date = NEW.date
-    AND a.room = NEW.room
-    AND a.floor = NEW.floor
-    AND a.b_eid = NEW.b_eid;
+    WHERE a.time = OLD.time
+    AND a.date = OLD.date
+    AND a.room = OLD.room
+    AND a.floor = OLD.floor
+    AND a.b_eid = OLD.b_eid;
 
     SELECT COUNT(*) INTO join_session
     FROM Sessions s
-    WHERE s.time = NEW.time
-    AND s.date = NEW.date
-    AND s.room = NEW.room
-    AND s.floor = NEW.floor
-    AND s.b_eid = NEW.b_eid;
+    WHERE s.time = OLD.time
+    AND s.date = OLD.date
+    AND s.room = OLD.room
+    AND s.floor = OLD.floor
+    AND s.b_eid = OLD.b_eid;
 
-    SELECT COUNT (*) INTO num_of_sick
+
+
+    SELECT COUNT (*) INTO number_of_sick
     FROM Health_Declarations h,
         contact_tracing(NEW.e_eid, NEW.date) c0,
         contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
@@ -109,11 +115,21 @@ BEGIN
         (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
     );
     
-    IF number_of_sick > 0 or NEW.date > (SELECT resigned_date FROM Employees E where E.eid = NEW.e_eid) 
-    or join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
+    -- if number_of_sick > 0 then raise notice '1';
+    -- end if;
+    -- if NEW.date >= check_resign(NEW.e_eid) then raise notice '2';
+    -- end  if;
+    -- if join_approved = 0 then raise notice '3.5';
+    -- end if;
+    -- if join_session = 0 then raise notice '3';
+    -- end if;
+    -- if ( join_session >0 AND join_approved = 0)  then raise notice '4';
+    -- end if;
+    -- return NULL;
+    IF number_of_sick > 0 or NEW.date >= check_resign(NEW.e_eid) or
+    join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
         RAISE NOTICE 'Employee will be removed from Joins';
         RETURN OLD;
-
     ELSE
         RAISE NOTICE 'Cannot leave approved session';
         RETURN NULL;

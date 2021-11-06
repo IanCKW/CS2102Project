@@ -1,3 +1,16 @@
+DROP TRIGGER IF EXISTS rem_future ON Employees;
+DROP TRIGGER IF EXISTS check_resigned_updates ON Updates;
+DROP TRIGGER IF EXISTS check_resigned_approves ON Approves;
+DROP TRIGGER IF EXISTS check_resigned_book ON Sessions;
+DROP TRIGGER IF EXISTS check_resigned_join ON Joins;
+DROP TRIGGER IF EXISTS future_approves ON Approves; 
+DROP TRIGGER IF EXISTS approves_check ON Approves;
+DROP TRIGGER IF EXISTS updates_check ON Updates;
+DROP TRIGGER IF EXISTS handle_updates ON Updates;
+DROP TRIGGER IF EXISTS handle_update_delete ON Updates;
+DROP TRIGGER IF EXISTS close_contact_rem ON Health_Declarations;
+DROP TRIGGER IF EXISTS session_rem ON Health_Declarations;
+
 -------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------
 ------------------------TRIGGERS, FUNC, TRIGGER FUNCS FOR RESIGNATION----------------------------------------------
@@ -341,11 +354,7 @@ $$ LANGUAGE plpgsql;
 
 -- NON_COMPLIANCE ROUTINE --
 CREATE OR REPLACE FUNCTION non_compliance(IN start_date DATE, IN end_date DATE)
-<<<<<<< HEAD
-RETURNS TABLE(id INT, c DOUBLE PRECISION) AS $$
-=======
 RETURNS TABLE(id INT, c FLOAT) AS $$
->>>>>>> 4c624762237c67041c0cb205c99ddfa2526e7354
 
     SELECT e.eid AS id, extract(day FROM end_date::timestamp - start_date::timestamp) - count(h.eid) + 1 AS c
     FROM Employees e 

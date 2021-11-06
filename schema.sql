@@ -52,7 +52,7 @@ CREATE TABLE Meeting_Rooms (
 
 CREATE TABLE Updates(
     date    DATE,
-    new_cap INTEGER,
+    new_cap INTEGER NOT NULL,
     room    INTEGER,
     floor   INTEGER,
     m_eid INTEGER NOT NULL,

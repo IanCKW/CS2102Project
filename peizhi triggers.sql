@@ -64,8 +64,7 @@ CREATE TRIGGER want_to_delete_dept
 BEFORE DELETE ON Departments
 FOR EACH ROW EXECUTE FUNCTION check_dept_relations();
 
-CREATE OR REPLACE FUNCTION FOR EACH ROW EXECUTE FUNCTION leave_approved_meetings();
-()
+CREATE OR REPLACE FUNCTION leave_approved_meetings()
 RETURNS TRIGGER AS $$
 DECLARE
     number_of_sick INTEGER;

@@ -281,14 +281,29 @@ BEGIN
         contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
     WHERE h.temp > 37.5 AND
     (
-        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE )) OR
-        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE )) OR
-        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE )) OR
-        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE )) OR
-        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE )) OR
-        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE )) OR
-        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE )) OR
-        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
     );
 
     IF num_of_sick_contacts > 0 THEN
@@ -321,14 +336,29 @@ BEGIN
         contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
     WHERE h.temp > 37.5 AND
     (
-        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE )) OR
-        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE )) OR
-        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE )) OR
-        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE )) OR
-        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE )) OR
-        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE )) OR
-        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE )) OR
-        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
     );
 
     IF num_of_sick_contacts > 0 THEN

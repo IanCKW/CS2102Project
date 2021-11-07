@@ -362,7 +362,7 @@ BEGIN
     );
 
     IF num_of_sick_contacts > 0 THEN
-        RAISE NOTICE 'Not allowed to join session as employee has been in contact with a sick personel in the past 7 days';
+        RAISE NOTICE 'Not allowed to book session as employee has been in contact with a sick personel in the past 7 days';
         RETURN NULL;
     ELSE
         RETURN NEW;

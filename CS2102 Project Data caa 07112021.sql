@@ -629,7 +629,7 @@ insert into Health_Declarations (date, temp, eid) values ('2021-11-08', 36.5, 37
 insert into Health_Declarations (date, temp, eid) values ('2021-11-09', 36.4, 82);
 insert into Health_Declarations (date, temp, eid) values ('2021-11-07', 36.5, 90);
 insert into Health_Declarations (date, temp, eid) values ('2021-11-09', 37.0, 96);
-insert into Health_Declarations (date, temp, eid) values ('2021-11-07', 36.4, 75)
+insert into Health_Declarations (date, temp, eid) values ('2021-11-07', 36.4, 75);
 insert into Health_Declarations (date, temp, eid) values ('2021-11-09', 36.4, 41);
 insert into Health_Declarations (date, temp, eid) values ('2021-11-07', 37.1, 50);
 insert into Health_Declarations (date, temp, eid) values ('2021-11-07', 36.5, 59);

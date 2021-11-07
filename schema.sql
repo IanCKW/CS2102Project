@@ -763,7 +763,7 @@ EXECUTE FUNCTION rem_close_contacts();
 CREATE OR REPLACE FUNCTION rem_sessions() -- cascades to delete approves and Joins
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.temp > 37.0 THEN 
+    IF NEW.temp > 37.5 THEN 
         RAISE NOTICE 'This employee has a fever, all future sessions booked by them are deleted';
         DELETE FROM SESSIONS s
         WHERE NEW.eid = s.b_eid AND s.date >= NEW.date;

@@ -154,7 +154,6 @@ BEFORE INSERT OR UPDATE ON Approves
 FOR EACH ROW EXECUTE FUNCTION checkApproverResignationStatus();
 
 
-
 DROP TRIGGER IF EXISTS room_in_updates ON Employees;
 DROP TRIGGER IF EXISTS delete_approved_joins ON Joins;
 
@@ -221,8 +220,11 @@ CREATE TRIGGER want_to_delete_dept
 BEFORE DELETE ON Departments
 FOR EACH ROW EXECUTE FUNCTION check_dept_relations();
 
-CREATE OR REPLACE FUNCTION FOR EACH ROW EXECUTE FUNCTION leave_approved_meetings();
-()
+
+
+
+
+CREATE OR REPLACE FUNCTION leave_approved_meetings()
 RETURNS TRIGGER AS $$
 DECLARE
     number_of_sick INTEGER;
@@ -231,46 +233,63 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO join_approved
     FROM Approves a
-    WHERE a.time = NEW.time
-    AND a.date = NEW.date
-    AND a.room = NEW.room
-    AND a.floor = NEW.floor
-    AND a.b_eid = NEW.b_eid;
+    WHERE a.time = OLD.time
+    AND a.date = OLD.date
+    AND a.room = OLD.room
+    AND a.floor = OLD.floor
+    AND a.b_eid = OLD.b_eid;
 
     SELECT COUNT(*) INTO join_session
     FROM Sessions s
-    WHERE s.time = NEW.time
-    AND s.date = NEW.date
-    AND s.room = NEW.room
-    AND s.floor = NEW.floor
-    AND s.b_eid = NEW.b_eid;
+    WHERE s.time = OLD.time
+    AND s.date = OLD.date
+    AND s.room = OLD.room
+    AND s.floor = OLD.floor
+    AND s.b_eid = OLD.b_eid;
+
+
 
     SELECT COUNT (*) INTO number_of_sick
-    FROM (Health_Declarations h 
-        JOIN contact_tracing(NEW.e_eid, NEW.date) c0 
-            ON h.eid = c0
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1 
-            ON h.eid = c1
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2 
-            ON h.eid = c2
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3 
-            ON h.eid = c3
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4 
-            ON h.eid = c4
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5 
-            ON h.eid = c5
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6 
-            ON h.eid = c6
-        JOIN contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7 
-            ON h.eid = c7
-    ) hc
-    WHERE hc.temp > 37.5;
+    FROM Health_Declarations h,
+        contact_tracing(NEW.e_eid, NEW.date) c0,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+    WHERE h.temp > 37.5 AND
+    (
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
+    );
     
-    IF number_of_sick > 0 or NEW.date > (SELECT resigned_date FROM Employees E where E.eid = NEW.e_eid) 
-    or join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
+    IF number_of_sick > 0 or NEW.date >= check_resign(NEW.e_eid) or
+    join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
         RAISE NOTICE 'Employee will be removed from Joins';
         RETURN OLD;
-
     ELSE
         RAISE NOTICE 'Cannot leave approved session';
         RETURN NULL;
@@ -281,6 +300,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER delete_approved_joins
 BEFORE DELETE ON Joins
 FOR EACH ROW EXECUTE FUNCTION leave_approved_meetings();
+
 
 
 DROP TRIGGER IF EXISTS rem_future ON Employees;
@@ -556,18 +576,20 @@ EXECUTE FUNCTION check_delete_update();
 CREATE OR REPLACE FUNCTION contact_tracing(IN sick_eid INT, IN sick_date DATE)
 RETURNS SETOF INT AS $$
 
-    SELECT j2.e_eid as e_eid
+    (SELECT j2.e_eid as e_eid
     FROM Approves s, Joins j1, Joins j2
     -- get participants of approved meetings
     WHERE (s.room, s.floor, s.date, s.time, s.b_eid) = (j1.room, j1.floor, j1.date, j1.time, s.b_eid)
     -- get sessions that eid was in in the past 3 days
     AND j1.e_eid = sick_eid AND (j1.date = sick_date OR j1.date = sick_date - INTERVAL '1 day' OR j1.date = sick_date - INTERVAL '2 day' OR j1.date = sick_date - INTERVAL '3 day')
     -- get close contacts;
-    AND (j1.room, j1.floor, j1.date, j1.time, j1.b_eid) = (j2.room, j2.floor, j2.date, j2.time, j2.b_eid)
+    AND (j1.room, j1.floor, j1.date, j1.time, j1.b_eid) = (j2.room, j2.floor, j2.date, j2.time, j2.b_eid))
+    UNION
+    (SELECT e.eid FROM Employees e WHERE e.eid = sick_eid );
     
 $$ LANGUAGE sql ;
 
--- TRIGGER FUNC AND TRIGGER TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS
+-- TRIGGER FUNC AND TRIGGER TO REMOVE CLOSE CONTACTS FROM 7 DAYS OF SESSIONS and DELET SESSIONS BOOKED BY CLOSE CONTACTS
 CREATE OR REPLACE FUNCTION rem_close_contacts()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -578,17 +600,17 @@ BEGIN
         DELETE FROM Joins j USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             j.e_eid = cc AND
-            j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
+            (j.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
             j.date = NEW.date + INTERVAL '2 day'OR j.date = NEW.date + INTERVAL '3 day'OR
             j.date = NEW.date + INTERVAL '4 day'OR j.date = NEW.date + INTERVAL '5 day'OR
-            j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day';
+            j.date = NEW.date + INTERVAL '6 day'OR j.date = NEW.date + INTERVAL '7 day');
         DELETE FROM Sessions s USING contact_tracing(NEW.eid, NEW.date) cc 
         WHERE
             s.b_eid = cc AND
-            s.date = NEW.date OR j.date = NEW.date + INTERVAL '1 day'OR
+            (s.date = NEW.date OR s.date = NEW.date + INTERVAL '1 day'OR
             s.date = NEW.date + INTERVAL '2 day'OR s.date = NEW.date + INTERVAL '3 day'OR
             s.date = NEW.date + INTERVAL '4 day'OR s.date = NEW.date + INTERVAL '5 day'OR
-            s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day';
+            s.date = NEW.date + INTERVAL '6 day'OR s.date = NEW.date + INTERVAL '7 day');
 
     END IF;
 RETURN new;
@@ -647,7 +669,8 @@ DROP TRIGGER IF EXISTS approved_check_book ON Sessions;
 DROP FUNCTION IF EXISTS check_approved_book();
 DROP TRIGGER IF EXISTS contact_check ON Joins;
 DROP FUNCTION IF EXISTS check_contact();
-DROP FUNCTION IF EXISTS sick_contacts(INTEGER, DATE);
+DROP TRIGGER IF EXISTS contact_check_book ON Sessions;
+DROP FUNCTION IF EXISTS check_contact_book();
 
 --The employee booking the room immediately joins the booked meeting
 CREATE OR REPLACE FUNCTION automatically_join()
@@ -890,36 +913,47 @@ CREATE TRIGGER approved_check_book
 BEFORE INSERT OR UPDATE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION check_approved_book();
 
---checks if an employee has been in contact with a sick employee in the past 7 days
-CREATE OR REPLACE FUNCTION sick_contacts(IN checked_eid INT, IN checked_date DATE)
-RETURNS TABLE(sick_contact_id INT) AS $$
-    SELECT j2.e_eid AS sick_contact_id
-    FROM Joins j1, (SELECT j.time, j.date, j.room, j.floor, j.b_eid, j.e_eid, h.temp
-        FROM (Joins j JOIN Health_Declarations h ON (j.e_eid = h.eid AND j.date = h.date))) j2
-    WHERE j1.e_eid = checked_eid --find all sessions joined by checked employee
-    AND (j1.date = checked_date --find all sessions joined by checked employee in the past 7 days
-        OR j1.date = checked_date - INTERVAL '1 day' 
-        OR j1.date = checked_date - INTERVAL '2 day' 
-        OR j1.date = checked_date - INTERVAL '3 day'
-        OR j1.date = checked_date - INTERVAL '4 day'
-        OR j1.date = checked_date - INTERVAL '5 day'
-        OR j1.date = checked_date - INTERVAL '6 day'
-        OR j1.date = checked_date - INTERVAL '7 day')
-    AND j2.time = j1.time --find all other employees who joined the same sessions as the checked employee
-    AND j2.date = j1.date
-    AND j2.room = j1.room
-    AND j2.floor = j1.floor
-    AND j2.b_eid = j1.b_eid
-    AND j2.temp > 37.5; --find all sick employees who joined the same sessions as the checked employee
-$$ LANGUAGE sql;
-
 CREATE OR REPLACE FUNCTION check_contact()
 RETURNS TRIGGER AS $$
 DECLARE
     num_of_sick_contacts INTEGER;
 BEGIN
     SELECT COUNT (*) INTO num_of_sick_contacts
-    FROM sick_contacts(NEW.e_eid, NEW.date);
+    FROM Health_Declarations h,
+        contact_tracing(NEW.e_eid, NEW.date) c0,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+    WHERE h.temp > 37.5 AND
+    (
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
+    );
 
     IF num_of_sick_contacts > 0 THEN
         RAISE NOTICE 'Not allowed to join session as employee has been in contact with a sick personel in the past 7 days';
@@ -934,3 +968,58 @@ CREATE TRIGGER contact_check
 BEFORE INSERT OR UPDATE ON Joins
 FOR EACH ROW EXECUTE FUNCTION check_contact();
 
+CREATE OR REPLACE FUNCTION check_contact_book()
+RETURNS TRIGGER AS $$
+DECLARE
+    num_of_sick_contacts INTEGER;
+BEGIN
+    SELECT COUNT (*) INTO num_of_sick_contacts
+    FROM Health_Declarations h,
+        contact_tracing(NEW.b_eid, NEW.date) c0,
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(NEW.b_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+    WHERE h.temp > 37.5 AND
+    (
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
+    );
+
+    IF num_of_sick_contacts > 0 THEN
+        RAISE NOTICE 'Not allowed to book session as employee has been in contact with a sick personel in the past 7 days';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER contact_check_book
+BEFORE INSERT OR UPDATE ON Sessions
+FOR EACH ROW EXECUTE FUNCTION check_contact_book();

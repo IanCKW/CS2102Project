@@ -822,13 +822,15 @@ FOR EACH ROW EXECUTE FUNCTION automatically_join();
 CREATE OR REPLACE FUNCTION check_temp_join()
 RETURNS TRIGGER AS $$
 DECLARE
-    t FLOAT;
+    temperature FLOAT;
 BEGIN
-    SELECT temp INTO t
+    SELECT hd.temp INTO temperature
     FROM Health_Declarations hd
-    WHERE hd.eid = NEW.e_eid;
+    WHERE hd.eid = NEW.e_eid
+    ORDER BY hd.date DESC
+    LIMIT 1;
 
-    IF t > 37.5 THEN
+    IF temperature > 37.5 THEN
         RAISE NOTICE 'Not allowed to join session as employee has fever';
         RETURN NULL;
     ELSE
@@ -902,13 +904,15 @@ FOR EACH ROW EXECUTE FUNCTION check_cap();
 CREATE OR REPLACE FUNCTION check_temp_book()
 RETURNS TRIGGER AS $$
 DECLARE
-    tem FLOAT;
+    temperature FLOAT;
 BEGIN
-    SELECT temp INTO tem
+    SELECT hd.temp INTO temperature
     FROM Health_Declarations hd
-    WHERE hd.eid = NEW.b_eid;
+    WHERE hd.eid = NEW.b_eid
+    ORDER BY hd.date DESC
+    LIMIT 1;
 
-    IF tem > 37.5 THEN
+    IF temperature > 37.5 THEN
         RAISE NOTICE 'Not allowed to book as booker has fever';
         RETURN NULL;
     ELSE

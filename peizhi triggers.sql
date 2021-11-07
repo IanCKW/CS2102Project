@@ -105,27 +105,31 @@ BEGIN
         contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
     WHERE h.temp > 37.5 AND
     (
-        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE )) OR
-        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE )) OR
-        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE )) OR
-        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE )) OR
-        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE )) OR
-        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE )) OR
-        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE )) OR
-        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE)) 
+        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+
+        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+
+        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+
+        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+
+        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+
+        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+
+        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+
+        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
     );
     
-    -- if number_of_sick > 0 then raise notice '1';
-    -- end if;
-    -- if NEW.date >= check_resign(NEW.e_eid) then raise notice '2';
-    -- end  if;
-    -- if join_approved = 0 then raise notice '3.5';
-    -- end if;
-    -- if join_session = 0 then raise notice '3';
-    -- end if;
-    -- if ( join_session >0 AND join_approved = 0)  then raise notice '4';
-    -- end if;
-    -- return NULL;
     IF number_of_sick > 0 or NEW.date >= check_resign(NEW.e_eid) or
     join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
         RAISE NOTICE 'Employee will be removed from Joins';

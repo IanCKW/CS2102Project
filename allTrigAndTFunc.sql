@@ -156,8 +156,11 @@ FOR EACH ROW EXECUTE FUNCTION checkApproverResignationStatus();
 
 DROP TRIGGER IF EXISTS room_in_updates ON Employees;
 DROP TRIGGER IF EXISTS delete_approved_joins ON Joins;
+DROP TRIGGER IF EXISTS want_to_delete_dept ON Departments;
 
 
+
+-- Ensure there is an update associated with a meeting room
 CREATE OR REPLACE FUNCTION in_updates() 
 RETURNS TRIGGER AS $$
 DECLARE
@@ -247,47 +250,52 @@ BEGIN
     AND s.floor = OLD.floor
     AND s.b_eid = OLD.b_eid;
 
-
-
     SELECT COUNT (*) INTO number_of_sick
     FROM Health_Declarations h,
-        contact_tracing(NEW.e_eid, NEW.date) c0,
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '1 day' AS DATE ))  c1,
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '2 day' AS DATE ))  c2,
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '3 day' AS DATE ))  c3, 
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '4 day' AS DATE ))  c4,
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '5 day' AS DATE ))  c5, 
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '6 day' AS DATE ))  c6, 
-        contact_tracing(NEW.e_eid, CAST ( NEW.date - INTERVAL '7 day' AS DATE ))  c7
+        contact_tracing(OLD.e_eid, OLD.date) c0,
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '1 day' AS DATE ))  c1,
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '2 day' AS DATE ))  c2,
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '3 day' AS DATE ))  c3, 
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '4 day' AS DATE ))  c4,
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '5 day' AS DATE ))  c5, 
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '6 day' AS DATE ))  c6, 
+        contact_tracing(OLD.e_eid, CAST ( OLD.date - INTERVAL '7 day' AS DATE ))  c7
     WHERE h.temp > 37.5 AND
     (
-        (h.eid = c0 AND h.date >= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date AS DATE ) ) OR
+        (h.eid = c0 AND h.date >= CAST ( OLD.date - INTERVAL '3 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date AS DATE ) ) OR
 
-        (h.eid = c1 AND h.date >= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '1 day' AS DATE ) ) OR
+        (h.eid = c1 AND h.date >= CAST ( OLD.date - INTERVAL '4 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '1 day' AS DATE ) ) OR
 
-        (h.eid = c2 AND h.date >= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '2 day' AS DATE ) ) OR
+        (h.eid = c2 AND h.date >= CAST ( OLD.date - INTERVAL '5 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '2 day' AS DATE ) ) OR
 
-        (h.eid = c3 AND h.date >= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '3 day' AS DATE ) ) OR
+        (h.eid = c3 AND h.date >= CAST ( OLD.date - INTERVAL '6 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '3 day' AS DATE ) ) OR
 
-        (h.eid = c4 AND h.date >= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '4 day' AS DATE ) ) OR
+        (h.eid = c4 AND h.date >= CAST ( OLD.date - INTERVAL '7 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '4 day' AS DATE ) ) OR
 
-        (h.eid = c5 AND h.date >= CAST ( NEW.date - INTERVAL '8 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '5 day' AS DATE ) ) OR
+        (h.eid = c5 AND h.date >= CAST ( OLD.date - INTERVAL '8 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '5 day' AS DATE ) ) OR
 
-        (h.eid = c6 AND h.date >= CAST ( NEW.date - INTERVAL '9 day' AS DATE ) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '6 day' AS DATE ) ) OR
+        (h.eid = c6 AND h.date >= CAST ( OLD.date - INTERVAL '9 day' AS DATE ) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '6 day' AS DATE ) ) OR
 
-        (h.eid = c7 AND h.date >= CAST ( NEW.date - INTERVAL '10 day' AS DATE) AND 
-                        h.date <= CAST ( NEW.date - INTERVAL '7 day' AS DATE ) ) 
+        (h.eid = c7 AND h.date >= CAST ( OLD.date - INTERVAL '10 day' AS DATE) AND 
+                        h.date <= CAST ( OLD.date - INTERVAL '7 day' AS DATE ) ) 
     );
-    
-    IF number_of_sick > 0 or NEW.date >= check_resign(NEW.e_eid) or
-    join_session = 0 or ( join_session >0 AND join_approved = 0) THEN 
+    IF number_of_sick = 0 THEN
+    RAISE NOTICE 'This employee is a close contact or is sick. Employee can be removed';
+    END IF;
+
+    IF join_session = 0 THEN
+    RAISE NOTICE 'Session has been deleted. Employee can be removed';
+    END IF;
+
+    IF number_of_sick > 0 OR OLD.date >= check_resign(OLD.e_eid) OR
+    join_session = 0 OR ( join_session >0 AND join_approved = 0) THEN 
         RAISE NOTICE 'Employee will be removed from Joins';
         RETURN OLD;
     ELSE
@@ -458,9 +466,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     m_department_id INTEGER; -- manager
     target_department_id INTEGER; -- session or update
-
 BEGIN
-    
     SELECT COALESCE(e.did,-1) INTO m_department_id 
     FROM Employees e, Managers m
     WHERE e.eid = m.eid AND NEW.m_eid = m.eid;
@@ -475,9 +481,8 @@ BEGIN
     ELSE
         RETURN NEW;
     END IF;
-
 END;
-$$LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER approves_check
 BEFORE INSERT OR UPDATE ON Approves
@@ -619,7 +624,7 @@ $$LANGUAGE plpgsql;
 
 
 CREATE TRIGGER close_contact_rem
-BEFORE INSERT OR UPDATE ON Health_Declarations
+AFTER INSERT OR UPDATE ON Health_Declarations
 FOR EACH ROW 
 EXECUTE FUNCTION rem_close_contacts();
 
@@ -800,6 +805,7 @@ BEGIN
         RAISE NOTICE 'Cannot book in the past';
         RETURN NULL;
     ELSE
+        RAISE NOTICE 'Room Booked';
         RETURN NEW;
     END IF;
 END;
@@ -829,7 +835,7 @@ BEGIN
         AND s.b_eid = OLD.e_eid;
     END IF;
 
-    RETURN NEW;
+    RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -837,7 +843,7 @@ CREATE TRIGGER meeting_cancelled
 AFTER DELETE ON Joins
 FOR EACH ROW EXECUTE FUNCTION cancel_meeting();
 
---No employees can join or leave from an already approved session
+--No employees can join from an already approved session
 CREATE OR REPLACE FUNCTION check_approved_join()
 RETURNS TRIGGER AS $$
 DECLARE

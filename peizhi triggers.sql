@@ -1,6 +1,6 @@
 DROP TRIGGER IF EXISTS room_in_updates ON Employees;
 DROP TRIGGER IF EXISTS delete_approved_joins ON Joins;
-
+DROP TRIGGER IF EXISTS want_to_delete_dept ON Departments;
 
 CREATE OR REPLACE FUNCTION in_updates() 
 RETURNS TRIGGER AS $$
